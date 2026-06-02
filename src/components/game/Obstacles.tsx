@@ -34,9 +34,9 @@ function toItem(obs: ObstacleData): InstancedModelItem {
       scale: [1.1, 1, 1.9],
     };
   }
-
   return {
     ...base,
+    rotationY: Math.PI,
     scale: [0.94, 1, 1.15],
   };
 }
