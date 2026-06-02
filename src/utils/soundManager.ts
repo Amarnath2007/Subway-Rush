@@ -17,15 +17,19 @@ class SoundManager {
   private masterGain: GainNode | null = null;
   private musicGain: GainNode | null = null;
   private sfxGain: GainNode | null = null;
+  private ambientGain: GainNode | null = null;
+  
   private musicTimer: ReturnType<typeof setInterval> | null = null;
   private musicSources: SourceSet = new Set();
   private sfxSources: SourceSet = new Set();
   private lastSfx = new Map<string, number>();
   private musicStep = 0;
+  
+  private masterVolume = 0.85;
+  private musicVolume = 0.38;
+  private sfxVolume = 0.72;
   private musicEnabled = true;
   private sfxEnabled = true;
-  private musicVolume = 0.32;
-  private sfxVolume = 0.62;
 
   private getCtx(): AudioContext {
     if (!this.audioCtx) {
@@ -34,28 +38,56 @@ class SoundManager {
       this.masterGain = this.audioCtx.createGain();
       this.musicGain = this.audioCtx.createGain();
       this.sfxGain = this.audioCtx.createGain();
-      this.masterGain.gain.value = 1;
+      this.ambientGain = this.audioCtx.createGain();
+      
       this.masterGain.connect(this.audioCtx.destination);
       this.musicGain.connect(this.masterGain);
       this.sfxGain.connect(this.masterGain);
+      this.ambientGain.connect(this.masterGain);
+      
       this.applyVolumes();
+      this.startAmbient();
     }
-
     return this.audioCtx;
   }
 
+  unlock() {
+    this.resume();
+  }
+
   private applyVolumes() {
-    if (!this.audioCtx || !this.musicGain || !this.sfxGain) return;
+    if (!this.audioCtx || !this.masterGain || !this.musicGain || !this.sfxGain) return;
     const now = this.audioCtx.currentTime;
-    this.musicGain.gain.setTargetAtTime(this.musicEnabled ? this.musicVolume * 0.18 : 0, now, 0.035);
-    this.sfxGain.gain.setTargetAtTime(this.sfxEnabled ? this.sfxVolume * 0.45 : 0, now, 0.02);
+    this.masterGain.gain.setTargetAtTime(this.masterVolume, now, 0.05);
+    this.musicGain.gain.setTargetAtTime(this.musicEnabled ? this.musicVolume : 0, now, 0.1);
+    this.sfxGain.gain.setTargetAtTime(this.sfxEnabled ? this.sfxVolume : 0, now, 0.05);
+    if (this.ambientGain) this.ambientGain.gain.setTargetAtTime(this.sfxEnabled ? 0.05 : 0, now, 0.5);
+  }
+
+  private startAmbient() {
+    if (!this.audioCtx || !this.ambientGain) return;
+    
+    const bufferSize = 2 * this.audioCtx.sampleRate;
+    const noiseBuffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+
+    const noise = this.audioCtx.createBufferSource();
+    noise.buffer = noiseBuffer;
+    noise.loop = true;
+
+    const filter = this.audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 120;
+    
+    noise.connect(filter);
+    filter.connect(this.ambientGain);
+    noise.start();
   }
 
   private resume() {
     const ctx = this.getCtx();
-    if (ctx.state === 'suspended') {
-      void ctx.resume();
-    }
+    if (ctx.state === 'suspended') void ctx.resume();
   }
 
   private register(source: AudioScheduledSourceNode, set: SourceSet) {
@@ -68,7 +100,6 @@ class SoundManager {
     const now = performance.now();
     const last = this.lastSfx.get(key) ?? -Infinity;
     if (now - last < cooldownMs) return false;
-    if (this.sfxSources.size > 10) return false;
     this.lastSfx.set(key, now);
     return true;
   }
@@ -79,9 +110,9 @@ class SoundManager {
     if (!destination) return;
 
     const start = ctx.currentTime + (options.delay ?? 0);
-    const attack = options.attack ?? 0.008;
-    const release = options.release ?? 0.04;
-    const volume = options.volume ?? 0.12;
+    const attack = options.attack ?? 0.01;
+    const release = options.release ?? 0.05;
+    const volume = options.volume ?? 0.15;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
@@ -93,97 +124,46 @@ class SoundManager {
 
     gain.gain.setValueAtTime(0.0001, start);
     gain.gain.linearRampToValueAtTime(volume, start + attack);
-    gain.gain.setTargetAtTime(0.0001, start + Math.max(attack, duration - release), Math.max(0.01, release));
+    gain.gain.setTargetAtTime(0.0001, start + Math.max(attack, duration - release), release);
 
     osc.connect(gain);
     gain.connect(destination);
     this.register(osc, destination === this.musicGain ? this.musicSources : this.sfxSources);
     osc.start(start);
-    osc.stop(start + duration + release * 2);
-  }
-
-  private playNoise(duration: number, volume: number, filterFreq: number, key: 'slide' | 'gameOver') {
-    const ctx = this.getCtx();
-    if (!this.sfxGain) return;
-
-    const frameCount = Math.max(1, Math.floor(ctx.sampleRate * duration));
-    const buffer = ctx.createBuffer(1, frameCount, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < frameCount; i++) {
-      data[i] = (Math.random() * 2 - 1) * (1 - i / frameCount);
-    }
-
-    const source = ctx.createBufferSource();
-    const filter = ctx.createBiquadFilter();
-    const gain = ctx.createGain();
-    source.buffer = buffer;
-    filter.type = key === 'slide' ? 'lowpass' : 'bandpass';
-    filter.frequency.value = filterFreq;
-    filter.Q.value = key === 'slide' ? 0.5 : 0.8;
-    gain.gain.setValueAtTime(volume, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-    source.connect(filter);
-    filter.connect(gain);
-    gain.connect(this.sfxGain);
-    this.register(source, this.sfxSources);
-    source.start();
-    source.stop(ctx.currentTime + duration);
-  }
-
-  private scheduleMusicPhrase() {
-    if (!this.musicEnabled || !this.musicGain) return;
-    const ctx = this.getCtx();
-    const start = ctx.currentTime + 0.04;
-    const scale = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25];
-    const bass = [130.81, 146.83, 164.81, 196.0];
-    const phrase = [
-      [0, 2, 4, 2],
-      [1, 3, 5, 3],
-      [2, 4, 5, 4],
-      [0, 3, 4, 2],
-    ][this.musicStep % 4];
-
-    for (let i = 0; i < phrase.length; i++) {
-      const noteTime = start + i * 0.34;
-      this.playTone(scale[phrase[i]], 0.16, {
-        type: 'triangle',
-        volume: 0.18,
-        attack: 0.018,
-        release: 0.08,
-        delay: noteTime - ctx.currentTime,
-        destination: this.musicGain,
-      });
-      this.playTone(scale[phrase[i]] * 2, 0.08, {
-        type: 'sine',
-        volume: 0.045,
-        attack: 0.01,
-        release: 0.06,
-        delay: noteTime + 0.08 - ctx.currentTime,
-        destination: this.musicGain,
-      });
-    }
-
-    this.playTone(bass[this.musicStep % bass.length], 1.15, {
-      type: 'sine',
-      volume: 0.08,
-      attack: 0.08,
-      release: 0.24,
-      delay: start - ctx.currentTime,
-      destination: this.musicGain,
-    });
-
-    this.musicStep += 1;
-  }
-
-  unlock() {
-    this.resume();
+    osc.stop(start + duration + release * 3);
   }
 
   startBGMusic() {
     if (!this.musicEnabled || this.musicTimer) return;
     this.resume();
     this.scheduleMusicPhrase();
-    this.musicTimer = setInterval(() => this.scheduleMusicPhrase(), 1360);
+    this.musicTimer = setInterval(() => this.scheduleMusicPhrase(), 1200);
+  }
+
+  private scheduleMusicPhrase() {
+    const ctx = this.getCtx();
+    const start = ctx.currentTime + 0.05;
+    const scale = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25];
+    const phrase = [[0, 2, 4, 3], [4, 5, 4, 2], [0, 4, 3, 2], [4, 5, 3, 4]][this.musicStep % 4];
+
+    for (let i = 0; i < 4; i++) {
+        const time = start + i * 0.3;
+        this.playTone(scale[phrase[i]], 0.12, {
+            type: 'triangle',
+            volume: 0.1,
+            delay: time - ctx.currentTime,
+            destination: this.musicGain!
+        });
+        if (i % 2 === 0) {
+            this.playTone(scale[phrase[i]] / 2, 0.25, {
+                type: 'sine',
+                volume: 0.15,
+                delay: time - ctx.currentTime,
+                destination: this.musicGain!
+            });
+        }
+    }
+    this.musicStep++;
   }
 
   stopBGMusic() {
@@ -191,60 +171,58 @@ class SoundManager {
       clearInterval(this.musicTimer);
       this.musicTimer = null;
     }
-
-    for (const source of this.musicSources) {
-      try {
-        source.stop();
-      } catch {
-        // Already stopped.
-      }
-    }
+    for (const source of this.musicSources) try { source.stop(); } catch {}
     this.musicSources.clear();
   }
 
   playCoin() {
-    if (!this.canPlay('coin', 38)) return;
+    if (!this.canPlay('coin', 40)) return;
     this.resume();
-    this.playTone(1046.5, 0.07, { type: 'sine', volume: 0.12, attack: 0.004, release: 0.05 });
-    this.playTone(1568, 0.09, { type: 'triangle', volume: 0.08, attack: 0.004, release: 0.06, delay: 0.045 });
+    this.playTone(987.77, 0.08, { type: 'sine', volume: 0.15 });
+    this.playTone(1318.51, 0.1, { type: 'triangle', volume: 0.1, delay: 0.04 });
   }
 
   playJump() {
-    if (!this.canPlay('jump', 120)) return;
+    if (!this.canPlay('jump', 150)) return;
     this.resume();
-    this.playTone(260, 0.2, { type: 'sine', volume: 0.08, slideTo: 520, release: 0.08 });
+    this.playTone(180, 0.15, { type: 'square', volume: 0.1, slideTo: 440 });
   }
 
   playSlide() {
-    if (!this.canPlay('slide', 170)) return;
+    if (!this.canPlay('slide', 200)) return;
     this.resume();
-    this.playNoise(0.18, 0.08, 560, 'slide');
+    this.playTone(800, 0.4, { type: 'triangle', volume: 0.08, slideTo: 200 });
   }
 
   playLaneSwitch() {
-    if (!this.canPlay('lane', 55)) return;
+    if (!this.canPlay('lane', 60)) return;
     this.resume();
-    this.playTone(620, 0.055, { type: 'triangle', volume: 0.045, slideTo: 470, release: 0.03 });
+    this.playTone(440, 0.06, { type: 'sine', volume: 0.05, slideTo: 220 });
+  }
+
+  playPowerup() {
+    this.resume();
+    [523, 659, 783, 1046].forEach((f, i) => {
+        this.playTone(f, 0.1, { volume: 0.15, delay: i * 0.06 });
+    });
   }
 
   playGameOver() {
-    if (!this.canPlay('gameOver', 650)) return;
     this.resume();
-    this.playTone(392, 0.16, { type: 'triangle', volume: 0.11, slideTo: 247, release: 0.08 });
-    this.playTone(196, 0.22, { type: 'sine', volume: 0.08, slideTo: 130, release: 0.12, delay: 0.09 });
-    this.playNoise(0.16, 0.05, 260, 'gameOver');
+    this.playTone(220, 0.5, { type: 'sawtooth', volume: 0.2, slideTo: 55 });
   }
 
-  playCrash() {
-    this.playGameOver();
+  playCrash() { this.playGameOver(); }
+
+  setVolumes(master: number, music: number, sfx: number) {
+    this.masterVolume = clamp01(master);
+    this.musicVolume = clamp01(music);
+    this.sfxVolume = clamp01(sfx);
+    this.applyVolumes();
   }
 
-  playWarning() {
-    if (!this.canPlay('warning', 500)) return;
-    this.resume();
-    this.playTone(220, 0.12, { type: 'triangle', volume: 0.05, slideTo: 185, release: 0.08 });
-  }
-
+  get volumes() { return { master: this.masterVolume, music: this.musicVolume, sfx: this.sfxVolume }; }
+  
   toggleMusic() {
     this.musicEnabled = !this.musicEnabled;
     this.applyVolumes();
@@ -258,24 +236,6 @@ class SoundManager {
     this.applyVolumes();
     return this.sfxEnabled;
   }
-
-  setMusicVolume(value: number) {
-    this.musicVolume = clamp01(value);
-    this.applyVolumes();
-    if (this.musicVolume > 0 && this.musicEnabled) this.startBGMusic();
-    return this.musicVolume;
-  }
-
-  setSFXVolume(value: number) {
-    this.sfxVolume = clamp01(value);
-    this.applyVolumes();
-    return this.sfxVolume;
-  }
-
-  get isMusicEnabled() { return this.musicEnabled; }
-  get isSFXEnabled() { return this.sfxEnabled; }
-  get getMusicVolume() { return this.musicVolume; }
-  get getSFXVolume() { return this.sfxVolume; }
 }
 
 export const soundManager = new SoundManager();

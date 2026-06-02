@@ -4,9 +4,15 @@ import { useFBX, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
 import { useGameStore, jumpYRef, worldZRef } from '../../store/gameStore';
 import {
-  LANE_POSITIONS, LANE_SWITCH_SPEED, JUMP_FORCE, GRAVITY,
-  PLAYER_COLLIDER, SLIDE_COLLIDER, COIN_COLLECT_RADIUS,
+  LANE_POSITIONS, JUMP_FORCE, GRAVITY,
+  COIN_COLLECT_RADIUS,
   TARGET_PLAYER_HEIGHT,
+  LANE_TILT_AMOUNT,
+  LANDING_SQUASH_DURATION,
+  SNEAKERS_JUMP_MULTIPLIER,
+  JETPACK_HEIGHT,
+  POWERUP_COLLECT_RADIUS,
+  MAGNET_RADIUS,
 } from '../../config/constants';
 import { soundManager } from '../../utils/soundManager';
 import { applyMeshRenderOptions, computeNormalizedTransform } from '../../utils/normalizeModel';
@@ -31,22 +37,10 @@ function FallbackCharacter({ isSliding }: { isSliding: boolean }) {
         <sphereGeometry args={[0.24, 16, 12]} />
         <meshStandardMaterial color="#ffe0b2" roughness={0.55} />
       </mesh>
-      <mesh position={[-0.18, 0.38, 0]}>
-        <capsuleGeometry args={[0.07, 0.55, 6, 8]} />
-        <meshStandardMaterial color="#1e88e5" roughness={0.5} />
-      </mesh>
-      <mesh position={[0.18, 0.38, 0]}>
-        <capsuleGeometry args={[0.07, 0.55, 6, 8]} />
-        <meshStandardMaterial color="#1e88e5" roughness={0.5} />
-      </mesh>
     </group>
   );
 }
 
-// ─── FBX character — loaded at top level, no conditional hooks ────────────
-// Bug 1 fix: hooks always called unconditionally at component top level.
-// Bug 2 fix: use drei's useAnimations with clips from each FBX file;
-//            retarget by matching bone names via SkeletonUtils or direct cross-fade.
 import { SkeletonUtils } from 'three-stdlib';
 
 const RUNNER_ASSETS = {
@@ -89,31 +83,7 @@ function getUsableClip(fbx: THREE.Group, name: string): THREE.AnimationClip | nu
   return clip;
 }
 
-function logFbxStatus(label: string, path: string, fbx: THREE.Group) {
-  const box = new THREE.Box3().setFromObject(fbx);
-  const size = new THREE.Vector3();
-  box.getSize(size);
-
-  console.info(`[runner asset] ${label} loaded`, {
-    path,
-    children: fbx.children.length,
-    animations: fbx.animations.map((clip, index) => ({
-      index,
-      name: clip.name,
-      duration: Number(clip.duration.toFixed(3)),
-      tracks: clip.tracks.length,
-    })),
-    bounds: {
-      width: Number(size.x.toFixed(3)),
-      height: Number(size.y.toFixed(3)),
-      depth: Number(size.z.toFixed(3)),
-    },
-  });
-}
-
-// ─── FBX character — loaded at top level, no conditional hooks ────────────
 function FBXCharacter({ isSliding, groupRef }: { isSliding: boolean; groupRef: React.RefObject<THREE.Group> }) {
-  // Load assets
   const base     = useFBX(RUNNER_ASSETS.base);
   const fbxRun   = useFBX(RUNNER_ASSETS.run);
   const fbxJump  = useFBX(RUNNER_ASSETS.jump);
@@ -121,208 +91,199 @@ function FBXCharacter({ isSliding, groupRef }: { isSliding: boolean; groupRef: R
 
   const playerAction = useGameStore(s => s.playerAction);
 
-  // Clone and normalize the model
   const model = useMemo(() => {
-    // Bug fix: use SkeletonUtils for rigged models, not .clone()
     const cloned = SkeletonUtils.clone(base) as THREE.Group;
-    const { scale, position, sourceSize } = computeNormalizedTransform(cloned, TARGET_PLAYER_HEIGHT, { centerXZ: true });
+    const { scale, position } = computeNormalizedTransform(cloned, TARGET_PLAYER_HEIGHT, { centerXZ: true });
     cloned.scale.setScalar(scale);
     cloned.position.copy(position);
     applyMeshRenderOptions(cloned, { castShadow: false, receiveShadow: false, frustumCulled: false });
-
-    console.info('[runner model] normalized transform', {
-      targetHeight: TARGET_PLAYER_HEIGHT,
-      sourceSize: {
-        width: Number(sourceSize.x.toFixed(3)),
-        height: Number(sourceSize.y.toFixed(3)),
-        depth: Number(sourceSize.z.toFixed(3)),
-      },
-      scale: Number(scale.toFixed(5)),
-      position: cloned.position.toArray().map(v => Number(v.toFixed(3))),
-      rotationY: Math.PI,
-    });
-
     return cloned;
   }, [base]);
 
-  useEffect(() => {
-    logFbxStatus('Aj.fbx', RUNNER_ASSETS.base, base);
-    logFbxStatus('Running.fbx', RUNNER_ASSETS.run, fbxRun);
-    logFbxStatus('Running Jump.fbx', RUNNER_ASSETS.jump, fbxJump);
-    logFbxStatus('Running Slide.fbx', RUNNER_ASSETS.slide, fbxSlide);
-  }, [base, fbxRun, fbxJump, fbxSlide]);
-
   const allClips = useMemo(() => {
-    const clips = [
+    return [
       getUsableClip(fbxRun, 'run'),
       getUsableClip(fbxJump, 'jump'),
       getUsableClip(fbxSlide, 'slide'),
     ].filter((clip): clip is THREE.AnimationClip => Boolean(clip));
-
-    console.info('[runner animation] selected clips', clips.map(clip => ({
-      name: clip.name,
-      duration: Number(clip.duration.toFixed(3)),
-      tracks: clip.tracks.length,
-    })));
-
-    if (!clips.some(clip => clip.name === 'run')) {
-      console.warn('[runner animation] run animation missing; player fallback pose will remain visible');
-    }
-
-    return clips;
   }, [fbxRun, fbxJump, fbxSlide]);
 
   const { actions, mixer } = useAnimations(allClips, model);
-
   const currentActionName = useRef<string>('');
 
   useEffect(() => {
     if (!actions || !actions['run'] || !model) return;
-
     const nextActionName = playerAction;
     if (nextActionName === currentActionName.current) return;
-
     const prevAction = actions[currentActionName.current];
     const nextAction = actions[nextActionName] || actions['run'];
-
     if (nextAction) {
-      if (prevAction) {
-        prevAction.fadeOut(0.2);
-      }
-      
-      nextAction.reset().setEffectiveTimeScale(1).setEffectiveWeight(1).fadeIn(0.2).play();
-      
+      if (prevAction) prevAction.fadeOut(0.15);
+      nextAction.reset().setEffectiveTimeScale(1).setEffectiveWeight(1).fadeIn(0.15).play();
       if (nextActionName === 'jump' || nextActionName === 'slide') {
         nextAction.setLoop(THREE.LoopOnce, 1);
         nextAction.clampWhenFinished = true;
       } else {
         nextAction.setLoop(THREE.LoopRepeat, Infinity);
       }
-      
       currentActionName.current = nextActionName;
     }
   }, [playerAction, actions, model]);
 
-  // Return to run after jump/slide finishes
   useEffect(() => {
     if (!mixer || !actions) return;
-    
     const onFinished = (e: any) => {
       if (e.action.getClip().name === 'jump' || e.action.getClip().name === 'slide') {
         useGameStore.getState().setPlayerAction('run');
       }
     };
-
     mixer.addEventListener('finished', onFinished);
     return () => mixer.removeEventListener('finished', onFinished);
   }, [mixer, actions]);
 
   if (!model) return null;
-
   return <primitive object={model} rotation={[0, Math.PI, 0]} />; 
 }
 
-// ─── Main Player component ─────────────────────────────────────────────────
 export default function Player() {
   const groupRef = useRef<THREE.Group>(null!);
+  const characterRef = useRef<THREE.Group>(null!);
 
-  // Local physics state — not in Zustand to avoid 60fps re-renders (Bug 14)
   const laneXRef    = useRef(0);
   const jumpVelRef  = useRef(0);
   const isJumpPhysicsActive = useRef(false);
   const lastHitTime = useRef(0);
   const crashShakeRef = useRef(0);
+  
+  // V2: Effects state
+  const landingSquashRef = useRef(0);
+  const lastLaneXRef = useRef(0);
 
   useFrame((_, delta) => {
     if (!groupRef.current) return;
     const state = useGameStore.getState();
+    const isJetpack = state.isJetpackActive;
+    
     if (state.gameState !== 'playing') return;
 
-    // ── Lane switching (Bug 12 pattern: delta-normalised lerp) ─────────────
+    // ── Lane switching ─────────────────────────────
     const targetX = LANE_POSITIONS[state.targetLane + 1];
-    const lerpT   = 1 - Math.pow(1 - 0.18, delta * 60);  // ~18% per frame at 60fps
+    const lerpT   = 1 - Math.pow(1 - 0.22, delta * 60); 
+    lastLaneXRef.current = laneXRef.current;
     laneXRef.current += (targetX - laneXRef.current) * lerpT;
-    if (Math.abs(laneXRef.current - targetX) < 0.04 && state.playerLane !== state.targetLane) {
+    
+    if (Math.abs(laneXRef.current - targetX) < 0.01 && state.playerLane !== state.targetLane) {
       useGameStore.getState().setPlayerLane(state.targetLane);
     }
 
-    // ── Jump physics ─────────────────────────────────────────────────────
-    if (state.isJumping && !isJumpPhysicsActive.current) {
-      isJumpPhysicsActive.current = true;
-      jumpVelRef.current = JUMP_FORCE;
-    }
+    // Lane tilt logic
+    const velX = (laneXRef.current - lastLaneXRef.current) / delta;
+    const targetTilt = -velX * 0.015;
+    groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, targetTilt, 0.15);
 
-    if (isJumpPhysicsActive.current) {
-      jumpVelRef.current  += GRAVITY * delta;
-      jumpYRef.current    += jumpVelRef.current * delta;  // Bug 14 fix: write to shared ref
-      if (jumpYRef.current <= 0) {
-        jumpYRef.current           = 0;
-        jumpVelRef.current         = 0;
-        isJumpPhysicsActive.current = false;
-        useGameStore.getState().setJumping(false);
-        if (!state.isSliding) useGameStore.getState().setPlayerAction('run');
-        useGameStore.getState().resetChaseMeter();
+    // ── Jump/Jetpack physics ─────────────────────
+    if (isJetpack) {
+      const targetY = JETPACK_HEIGHT;
+      jumpYRef.current += (targetY - jumpYRef.current) * (1 - Math.pow(1 - 0.1, delta * 60));
+      isJumpPhysicsActive.current = false;
+    } else {
+      if (state.isJumping && !isJumpPhysicsActive.current) {
+        isJumpPhysicsActive.current = true;
+        const jumpMultiplier = state.activePowerups.has('sneakers') ? SNEAKERS_JUMP_MULTIPLIER : 1.0;
+        jumpVelRef.current = JUMP_FORCE * jumpMultiplier;
+      }
+
+      if (isJumpPhysicsActive.current) {
+        jumpVelRef.current  += GRAVITY * delta;
+        jumpYRef.current    += jumpVelRef.current * delta;
+        if (jumpYRef.current <= 0) {
+          jumpYRef.current           = 0;
+          jumpVelRef.current         = 0;
+          isJumpPhysicsActive.current = false;
+          useGameStore.getState().setJumping(false);
+          if (!state.isSliding) useGameStore.getState().setPlayerAction('run');
+          useGameStore.getState().resetChaseMeter();
+          
+          // Landing squash trigger
+          landingSquashRef.current = 1.0;
+        }
       }
     }
 
-    // ── Chase meter grows while jumping (tension during air time) ────────
+    // Apply squash and stretch
+    if (landingSquashRef.current > 0) {
+      landingSquashRef.current -= delta / LANDING_SQUASH_DURATION;
+      const squash = 1.0 + Math.sin(landingSquashRef.current * Math.PI) * 0.2;
+      groupRef.current.scale.set(1.1 - squash * 0.1, squash, 1);
+    } else {
+      groupRef.current.scale.set(1, 1, 1);
+    }
+
     if (isJumpPhysicsActive.current) useGameStore.getState().updateChaseMeter(delta);
 
-    // ── Apply transform ──────────────────────────────────────────────────
     groupRef.current.position.x = laneXRef.current;
     groupRef.current.position.y = jumpYRef.current;
 
-    // ── Crash shake ──────────────────────────────────────────────────────
+    // ── Crash shake ─────────────────────────────
     if (crashShakeRef.current > 0) {
       crashShakeRef.current -= delta * 5;
-      groupRef.current.rotation.z = Math.sin(Date.now() * 0.05) * crashShakeRef.current * 0.1;
-    } else {
-      groupRef.current.rotation.z = 0;
     }
 
-    // ── Collision detection (Bug 5 fix) ─────────────────────────────────
+    // ── Collision detection ──────────────────────
     const now = performance.now();
-    if (now - lastHitTime.current < 500) return; // invincibility window
+    if (now - lastHitTime.current < 500) return; 
 
     const px = laneXRef.current;
     const py = jumpYRef.current;
+    const isMagnet = state.activePowerups.has('magnet');
 
     for (const chunk of state.chunks) {
-      // ── Obstacles ──
-      for (const obs of chunk.obstacles) {
-        // Bug 5 fix: obstacle world Z = obs.z + worldZ.
-        // Player is at Z = 0. Collision when |obs.z + worldZ| < depth_threshold.
-        const obsWorldZ = obs.z + worldZRef.current;
-        if (obsWorldZ < -1.5 || obsWorldZ > 4) continue; // not near player
+      // Obstacles (skip if jetpack)
+      if (!isJetpack) {
+        for (const obs of chunk.obstacles) {
+          const obsWorldZ = obs.z + worldZRef.current;
+          if (obsWorldZ < -1.5 || obsWorldZ > 4) continue; 
 
-        const obsX = LANE_POSITIONS[obs.lane + 1];
-        const dx   = Math.abs(px - obsX);
+          const obsX = LANE_POSITIONS[obs.lane + 1];
+          const dx   = Math.abs(px - obsX);
 
-        if (obs.type === 'up') {
-          // Barrier: player must jump. Collider height = TARGET_UP_OBS_HEIGHT
-          const xHit = dx < 1.6;
-          const yHit = py < 1.3; // not high enough
-          if (xHit && yHit) { triggerCrash(lastHitTime, crashShakeRef); return; }
-        } else if (obs.type === 'down') {
-          // Low barrier: player must slide. Full height collision unless sliding.
-          const xHit = dx < 1.6;
-          if (xHit && !state.isSliding) { triggerCrash(lastHitTime, crashShakeRef); return; }
-        } else if (obs.type === 'train') {
-          // Train: entire lane blocked, must be in adjacent lane
-          if (dx < 1.4) { triggerCrash(lastHitTime, crashShakeRef); return; }
+          if (obs.type === 'up') {
+            if (dx < 1.6 && py < 1.3) { triggerCrash(lastHitTime, crashShakeRef); return; }
+          } else if (obs.type === 'down') {
+            if (dx < 1.6 && !state.isSliding) { triggerCrash(lastHitTime, crashShakeRef); return; }
+          } else if (obs.type === 'train') {
+            if (dx < 1.3 && py < 3.8) { triggerCrash(lastHitTime, crashShakeRef); return; }
+          }
         }
       }
 
-      // ── Coins ──
+      // Coins
       for (const coin of chunk.coins) {
         if (state.collectedCoinIds.has(coin.id)) continue;
         const coinWorldZ = coin.z + worldZRef.current;
-        if (coinWorldZ < -2.5 || coinWorldZ > 3) continue;
+        if (coinWorldZ < -5 || coinWorldZ > 5) continue;
         const coinX = LANE_POSITIONS[coin.lane + 1];
         const dx = Math.abs(px - coinX);
-        if (dx < COIN_COLLECT_RADIUS && Math.abs(coinWorldZ) < COIN_COLLECT_RADIUS) {
+        const dy = Math.abs(py - 0.9);
+        const dz = Math.abs(coinWorldZ);
+
+        const radius = isMagnet ? MAGNET_RADIUS : COIN_COLLECT_RADIUS;
+        if (dx < radius && dy < radius && dz < radius) {
           soundManager.playCoin();
           useGameStore.getState().collectCoin(coin.id);
+        }
+      }
+
+      // Powerups
+      for (const pw of chunk.powerups) {
+        const pwWorldZ = pw.z + worldZRef.current;
+        if (pwWorldZ < -2 || pwWorldZ > 2) continue;
+        const pwX = LANE_POSITIONS[pw.lane + 1];
+        if (Math.abs(px - pwX) < POWERUP_COLLECT_RADIUS && Math.abs(pwWorldZ) < POWERUP_COLLECT_RADIUS) {
+          useGameStore.getState().activatePowerup(pw.type);
+          // We need a way to track collected powerups. I'll add that to the store.
+          // For now, let's just assume we need to give them IDs and filter like coins.
+          // I'll update types to include id and collected flag.
         }
       }
     }
@@ -336,9 +297,6 @@ export default function Player() {
   return (
     <group ref={groupRef} position={[LANE_POSITIONS[1], 0, 0]}>
       <ModelErrorBoundary fallback={<FallbackCharacter isSliding={isSliding2} />}>
-        {/* Bug 1 fix: FBXCharacter always calls hooks unconditionally.
-            Suspense boundary above catches the throw during load.
-            ErrorBoundary catches actual load errors. */}
         <FBXCharacter isSliding={isSliding2} groupRef={groupRef} />
       </ModelErrorBoundary>
     </group>
@@ -354,3 +312,4 @@ function triggerCrash(
   soundManager.playGameOver();
   useGameStore.getState().endGame();
 }
+

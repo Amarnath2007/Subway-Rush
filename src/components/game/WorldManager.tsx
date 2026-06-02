@@ -4,6 +4,7 @@ import { useGameStore, worldZRef } from '../../store/gameStore';
 import { generateChunk } from '../../utils/chunkGenerator';
 import { CHUNK_LENGTH, CHUNKS_AHEAD, CHUNKS_BEHIND } from '../../config/constants';
 import { ChunkData } from '../../types/game';
+import { qualityManager } from '../../utils/qualityManager';
 
 function getChunkIndexForWorld(worldZ: number): number {
   return Math.floor(worldZ / CHUNK_LENGTH);
@@ -17,17 +18,23 @@ function buildChunk(index: number): ChunkData {
   const chunkZ = getChunkZ(index);
   const progressionIndex = Math.max(0, index);
   const difficulty = Math.min(progressionIndex / 32, 1);
+  const envDensity = qualityManager.settings.envDensity;
+  
   return generateChunk(index, chunkZ, {
     difficulty,
     safe: index < 0,
+    envDensity,
   });
 }
 
 function syncChunkWindow(worldZ: number, force = false) {
-  const centerIndex = getChunkIndexForWorld(worldZ);
-  const firstIndex = centerIndex - CHUNKS_BEHIND;
-  const lastIndex = centerIndex + CHUNKS_AHEAD;
   const state = useGameStore.getState();
+  const qSettings = qualityManager.settings;
+  
+  const centerIndex = getChunkIndexForWorld(worldZ);
+  const firstIndex = centerIndex - qSettings.chunksBehind;
+  const lastIndex = centerIndex + qSettings.chunksAhead;
+  
   const existing = new Map<number, ChunkData>();
 
   for (const chunk of state.chunks) {
@@ -66,6 +73,7 @@ function syncChunkWindow(worldZ: number, force = false) {
 
 export default function WorldManager() {
   const lastCenterIndexRef = useRef<number | null>(null);
+  const lastTierRef = useRef(qualityManager.tier);
 
   useFrame((_, delta) => {
     const state = useGameStore.getState();
@@ -76,8 +84,16 @@ export default function WorldManager() {
 
     const worldZ = worldZRef.current;
     const centerIndex = getChunkIndexForWorld(worldZ);
-    if (lastCenterIndexRef.current !== centerIndex || state.chunks.length === 0) {
+    const currentTier = qualityManager.tier;
+    
+    // Resync if index changed OR if quality tier changed (necessitates density/count update)
+    if (
+      lastCenterIndexRef.current !== centerIndex || 
+      state.chunks.length === 0 ||
+      lastTierRef.current !== currentTier
+    ) {
       lastCenterIndexRef.current = centerIndex;
+      lastTierRef.current = currentTier;
       syncChunkWindow(worldZ);
     }
   });
@@ -86,6 +102,7 @@ export default function WorldManager() {
     const unsub = useGameStore.subscribe((state, prev) => {
       if (state.gameState === 'playing' && prev.gameState !== 'playing') {
         lastCenterIndexRef.current = getChunkIndexForWorld(0);
+        lastTierRef.current = qualityManager.tier;
         syncChunkWindow(0, true);
       }
     });
@@ -95,3 +112,4 @@ export default function WorldManager() {
 
   return null;
 }
+

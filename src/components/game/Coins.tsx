@@ -81,7 +81,7 @@ function CoinLayer({ source, coins }: { source: InstancedModelSource; coins: Coi
     <instancedMesh
       ref={meshRef}
       args={[source.geometry, source.material, coins.length]}
-      frustumCulled={false}
+      frustumCulled={true}
       dispose={null}
     />
   );

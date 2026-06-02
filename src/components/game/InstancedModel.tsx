@@ -118,7 +118,7 @@ function InstancedLayer({
       args={[source.geometry, source.material, itemMatrices.length]}
       castShadow={castShadow}
       receiveShadow={receiveShadow}
-      frustumCulled={false}
+      frustumCulled={true}
       dispose={null}
     />
   );

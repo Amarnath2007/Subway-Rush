@@ -2,90 +2,130 @@ import { useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { soundManager } from '../../utils/soundManager';
 
-export default function PauseMenu() {
-  const { resumeGame, score } = useGameStore();
-  const [musicOn, setMusicOn] = useState(soundManager.isMusicEnabled);
-  const [sfxOn,   setSFXOn]   = useState(soundManager.isSFXEnabled);
-  const [musicVolume, setMusicVolume] = useState(soundManager.getMusicVolume);
-  const [sfxVolume, setSFXVolume] = useState(soundManager.getSFXVolume);
+interface SliderProps {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+}
 
-  const handleResume = () => { soundManager.playJump(); resumeGame(); };
-  const handleQuit   = () => { soundManager.playGameOver(); useGameStore.getState().endGame(); };
-
-  const toggleMusic = () => { setMusicOn(soundManager.toggleMusic()); };
-  const toggleSFX   = () => { setSFXOn(soundManager.toggleSFX()); };
-  const updateMusicVolume = (value: number) => setMusicVolume(soundManager.setMusicVolume(value));
-  const updateSFXVolume = (value: number) => setSFXVolume(soundManager.setSFXVolume(value));
-
-  const Toggle = ({ label, on, toggle }: { label: string; on: boolean; toggle: () => void }) => (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'2px 0' }}>
-      <span style={{ color:'#fff', fontSize:'0.88rem' }}>{label}</span>
-      <button onClick={toggle} style={{
-        background: on ? 'linear-gradient(135deg,#4caf50,#2e7d32)' : 'rgba(255,255,255,0.1)',
-        border: 'none', borderRadius: 20, width: 52, height: 27, cursor: 'pointer',
-        position: 'relative', transition: 'background 0.2s ease', flexShrink: 0,
-      }}>
-        <div style={{
-          position: 'absolute', width: 21, height: 21, borderRadius: '50%',
-          background: '#fff', top: 3, left: on ? 28 : 3, transition: 'left 0.2s ease',
-        }} />
-      </button>
+const Slider = ({ label, value, onChange }: SliderProps) => (
+  <div style={{ width: '100%', marginBottom: '14px' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: 600, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+      <span>{label}</span>
+      <span>{Math.round(value * 100)}%</span>
     </div>
-  );
+    <div style={{ position: 'relative', height: '6px', width: '100%', background: 'rgba(255,255,255,0.1)', borderRadius: '3px' }}>
+      <input 
+        type="range" min="0" max="1" step="0.01" value={value} 
+        onChange={(e) => onChange(parseFloat(e.target.value))}
+        style={{
+          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+          opacity: 0, cursor: 'pointer', zIndex: 2
+        }}
+      />
+      <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${value * 100}%`, background: 'linear-gradient(90deg, #3b82f6, #60a5fa)', borderRadius: '3px' }} />
+      <div style={{ 
+        position: 'absolute', top: '50%', left: `${value * 100}%`, width: '14px', height: '14px', 
+        background: '#fff', borderRadius: '50%', transform: 'translate(-50%, -50%)',
+        boxShadow: '0 2px 6px rgba(0,0,0,0.4)', pointerEvents: 'none'
+      }} />
+    </div>
+  </div>
+);
+
+export default function PauseMenu() {
+  const resume = useGameStore(s => s.resumeGame);
+  const restart = useGameStore(s => s.restartGame);
+  const score = useGameStore(s => s.score);
+  
+  const [vols, setVols] = useState(soundManager.volumes);
+
+  const updateVols = (key: keyof typeof vols, val: number) => {
+    const next = { ...vols, [key]: val };
+    setVols(next);
+    soundManager.setVolumes(next.master, next.music, next.sfx);
+  };
 
   return (
     <div style={{
       position: 'absolute', inset: 0,
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      background: 'rgba(10,18,55,0.9)', backdropFilter: 'blur(14px)',
-      fontFamily: "'Segoe UI', system-ui, sans-serif",
+      background: 'rgba(5, 10, 25, 0.85)',
+      backdropFilter: 'blur(16px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 1000,
+      fontFamily: "'Inter', sans-serif"
     }}>
       <div style={{
-        background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)',
-        borderRadius: 26, padding: '2.2rem 1.8rem',
-        minWidth: 280, maxWidth: 360, width: '90%', textAlign: 'center',
+        background: 'linear-gradient(145deg, rgba(30, 35, 50, 0.9), rgba(15, 20, 35, 0.95))',
+        padding: '40px',
+        borderRadius: '32px',
+        width: '340px',
+        textAlign: 'center',
+        boxShadow: '0 25px 60px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.05)',
+        animation: 'popIn 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)'
       }}>
-        <div style={{ fontSize: '2.4rem', fontWeight: 900, color: '#fff', letterSpacing: -1, marginBottom: 6 }}>⏸ PAUSED</div>
-        <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.88rem', marginBottom: '1.4rem' }}>
-          Score: <span style={{ color:'#ffd700', fontWeight:700 }}>{score.toLocaleString()}</span>
-        </div>
-
-        {/* Settings */}
-        <div style={{
-          background: 'rgba(255,255,255,0.04)', borderRadius: 16,
-          padding: '1rem 1.2rem', marginBottom: '1.4rem',
-          display: 'flex', flexDirection: 'column', gap: '0.8rem',
+        <div style={{ color: '#3b82f6', fontSize: '10px', fontWeight: 800, letterSpacing: '4px', marginBottom: '8px' }}>SESSION PAUSED</div>
+        <h1 style={{ color: 'white', margin: '0 0 8px 0', fontSize: '36px', fontWeight: 900, letterSpacing: '-1px' }}>RESUME?</h1>
+        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', marginBottom: '32px' }}>Current Score: <span style={{ color: '#fff', fontWeight: 600 }}>{score.toLocaleString()}</span></div>
+        
+        <div style={{ 
+          background: 'rgba(0,0,0,0.2)', 
+          padding: '24px', 
+          borderRadius: '20px', 
+          marginBottom: '32px',
+          border: '1px solid rgba(255,255,255,0.03)'
         }}>
-          <div style={{ color:'#ffd700', fontSize:'0.65rem', fontWeight:700, letterSpacing:2, marginBottom:2 }}>SETTINGS</div>
-          <Toggle label="🎵 Music"    on={musicOn} toggle={toggleMusic} />
-          <Toggle label="🔊 Sound FX" on={sfxOn}   toggle={toggleSFX} />
+          <Slider label="Master Volume" value={vols.master} onChange={(v) => updateVols('master', v)} />
+          <Slider label="Background Music" value={vols.music} onChange={(v) => updateVols('music', v)} />
+          <Slider label="Sound Effects" value={vols.sfx} onChange={(v) => updateVols('sfx', v)} />
         </div>
 
-        <div style={{ display:'flex', flexDirection:'column', gap:'0.65rem' }}>
-          <button onClick={handleResume} style={{
-            background: 'linear-gradient(135deg,#ffd700,#ff8c00)',
-            border:'none', borderRadius:50, padding:'0.85rem 2rem',
-            fontSize:'1rem', fontWeight:800, color:'#1a0a00',
-            cursor:'pointer', letterSpacing:2, textTransform:'uppercase',
-            transition:'transform 0.12s ease',
-            boxShadow:'0 6px 22px rgba(255,140,0,0.4)',
-          }}
-          onMouseEnter={e=>{(e.target as HTMLElement).style.transform='scale(1.04)';}}
-          onMouseLeave={e=>{(e.target as HTMLElement).style.transform='scale(1)';}}
-          >▶ RESUME</button>
-
-          <button onClick={handleQuit} style={{
-            background: 'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.18)',
-            borderRadius:50, padding:'0.75rem 2rem',
-            fontSize:'0.9rem', fontWeight:600, color:'rgba(255,255,255,0.65)',
-            cursor:'pointer', letterSpacing:1, textTransform:'uppercase',
-            transition:'all 0.12s ease',
-          }}
-          onMouseEnter={e=>{(e.target as HTMLElement).style.background='rgba(255,60,60,0.18)'; (e.target as HTMLElement).style.color='#ff6666';}}
-          onMouseLeave={e=>{(e.target as HTMLElement).style.background='rgba(255,255,255,0.07)'; (e.target as HTMLElement).style.color='rgba(255,255,255,0.65)';}}
-          >🚪 QUIT</button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <button 
+            onClick={resume}
+            style={{
+              padding: '18px', borderRadius: '16px', border: 'none',
+              background: '#3b82f6', color: 'white', fontWeight: 700, fontSize: '18px',
+              cursor: 'pointer', boxShadow: '0 8px 24px rgba(59, 130, 246, 0.3)',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-2px)')}
+            onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}
+          >
+            RESUME RUN
+          </button>
+          
+          <button 
+            onClick={restart}
+            style={{
+              padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)',
+              background: 'transparent', color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '15px',
+              cursor: 'pointer', transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                e.currentTarget.style.color = '#fff';
+            }}
+            onMouseLeave={e => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = 'rgba(255,255,255,0.6)';
+            }}
+          >
+            RESTART MISSION
+          </button>
         </div>
       </div>
+
+      <style>{`
+        @keyframes popIn {
+          from { transform: scale(0.9); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        @font-face {
+          font-family: 'Inter';
+          src: url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+        }
+      `}</style>
     </div>
   );
 }

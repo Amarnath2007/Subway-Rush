@@ -2,6 +2,7 @@ import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Sky, Stars, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+import { mergeBufferGeometries } from 'three-stdlib';
 import { useGameStore, worldZRef } from '../../store/gameStore';
 import { CHUNK_LENGTH, TARGET_BUILDING_HEIGHT, TARGET_TREE_HEIGHT } from '../../config/constants';
 import { EnvProp } from '../../types/game';
@@ -56,10 +57,12 @@ function StaticInstances({
   geometry,
   material,
   matrices,
+  colors,
 }: {
   geometry: THREE.BufferGeometry;
   material: THREE.Material;
   matrices: THREE.Matrix4[];
+  colors?: THREE.Color[];
 }) {
   const ref = useRef<THREE.InstancedMesh>(null!);
 
@@ -68,9 +71,15 @@ function StaticInstances({
     if (!mesh) return;
     mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
     matrices.forEach((matrix, index) => mesh.setMatrixAt(index, matrix));
+    
+    if (colors && colors.length === matrices.length) {
+      colors.forEach((color, index) => mesh.setColorAt(index, color));
+      mesh.instanceColor!.needsUpdate = true;
+    }
+    
     mesh.instanceMatrix.needsUpdate = true;
     mesh.computeBoundingSphere();
-  }, [matrices]);
+  }, [matrices, colors]);
 
   if (matrices.length === 0) return null;
 
@@ -79,7 +88,7 @@ function StaticInstances({
       key={matrices.length}
       ref={ref}
       args={[geometry, material, matrices.length]}
-      frustumCulled={false}
+      frustumCulled={true}
       dispose={null}
     />
   );
@@ -150,17 +159,64 @@ export default function Environment() {
     if (groupRef.current) groupRef.current.position.z = worldZRef.current;
   });
 
-  const envPropChunks = useMemo(() => chunks.map(c => c.envProps), [chunks]);
+  const envProps = useMemo(() => chunks.flatMap(c => c.envProps), [chunks]);
   const chunkFronts = useMemo(() => chunks.map(c => c.z), [chunks]);
-  const allProps = useMemo(() => envPropChunks.flat(), [envPropChunks]);
-  const treeItems = useMemo(
-    () => allProps.filter(prop => prop.type === 'tree').map(toTreeItem),
-    [allProps]
-  );
-  const buildingItems = useMemo(
-    () => allProps.filter(prop => prop.type !== 'tree').map(toBuildingItem),
-    [allProps]
-  );
+
+  const treeItems = useMemo(() => envProps.filter(p => p.type === 'tree').map(toTreeItem), [envProps]);
+  const buildingItems = useMemo(() => envProps.filter(p => p.type === 'building1' || p.type === 'building2').map(toBuildingItem), [envProps]);
+
+  // Procedural props
+  const fenceGeo = useMemo(() => {
+    const geo = new THREE.BoxGeometry(0.1, 0.8, 10);
+    geo.translate(0, 0.4, 0);
+    return geo;
+  }, []);
+  const fenceMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#555', roughness: 0.8 }), []);
+  const fenceMatrices = useMemo(() => envProps.filter(p => p.type === 'fence').map(p => {
+    const m = new THREE.Matrix4();
+    m.compose(new THREE.Vector3(p.x, 0, p.z), new THREE.Quaternion(), new THREE.Vector3(1, 1, 1));
+    return m;
+  }), [envProps]);
+
+  const streetlightGeo = useMemo(() => {
+    const poleFinal = new THREE.CylinderGeometry(0.08, 0.1, 4.5, 8);
+    poleFinal.translate(0, 2.25, 0);
+    const lampFinal = new THREE.BoxGeometry(0.6, 0.15, 0.3);
+    lampFinal.translate(0.3, 4.5, 0);
+    
+    return mergeBufferGeometries([poleFinal, lampFinal]);
+  }, []);
+  const streetlightMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#444', roughness: 0.5 }), []);
+  const streetlightMatrices = useMemo(() => envProps.filter(p => p.type === 'streetlight').map(p => {
+    const m = new THREE.Matrix4();
+    const rot = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), p.side === 'left' ? Math.PI : 0);
+    m.compose(new THREE.Vector3(p.x, 0, p.z), rot, new THREE.Vector3(1, 1, 1));
+    return m;
+  }), [envProps]);
+
+  const grassGeo = useMemo(() => new THREE.PlaneGeometry(2.5, CHUNK_LENGTH), []);
+  const grassMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#4d7c0f', roughness: 1.0 }), []);
+  const grassMatrices = useMemo(() => envProps.filter(p => p.type === 'grass').map(p => {
+    const m = new THREE.Matrix4();
+    const rot = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
+    m.compose(new THREE.Vector3(p.x, 0.01, p.z), rot, new THREE.Vector3(1, 1, 1));
+    return m;
+  }), [envProps]);
+
+  const benchGeo = useMemo(() => {
+    const seat = new THREE.BoxGeometry(1.2, 0.1, 0.5);
+    seat.translate(0, 0.45, 0);
+    const back = new THREE.BoxGeometry(1.2, 0.5, 0.1);
+    back.translate(0, 0.7, -0.25);
+    return mergeBufferGeometries([seat, back]);
+  }, []);
+  const benchMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#5d4037', roughness: 0.9 }), []);
+  const benchMatrices = useMemo(() => envProps.filter(p => p.type === 'bench').map(p => {
+    const m = new THREE.Matrix4();
+    const rot = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), p.side === 'left' ? Math.PI / 2 : -Math.PI / 2);
+    m.compose(new THREE.Vector3(p.x, 0, p.z), rot, new THREE.Vector3(1, 1, 1));
+    return m;
+  }), [envProps]);
 
   return (
     <>
@@ -173,7 +229,15 @@ export default function Environment() {
         <InstancedModelBatch url={TREE_URL} targetHeight={TARGET_TREE_HEIGHT} items={treeItems} />
         <InstancedModelBatch url={BUILDING_URL} targetHeight={TARGET_BUILDING_HEIGHT} items={buildingItems} />
         <OverheadWires chunkFronts={chunkFronts} />
+        
+        {/* New V2 Procedural Props */}
+        <StaticInstances geometry={fenceGeo} material={fenceMat} matrices={fenceMatrices} />
+        <StaticInstances geometry={streetlightGeo} material={streetlightMat} matrices={streetlightMatrices} />
+        <StaticInstances geometry={grassGeo} material={grassMat} matrices={grassMatrices} />
+        <StaticInstances geometry={benchGeo} material={benchMat} matrices={benchMatrices} />
       </group>
     </>
   );
 }
+
+
