@@ -1,0 +1,178 @@
+
+> subway-surfers-game@1.0.0 dev
+> vite --host 127.0.0.1
+
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m635[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m3000[22m/[39m
+[2m11:04:37 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/pgbnimfaaifjpebleldfhgcjdnaeafdi/24.10.2_0/markerTab.html[22m
+[2m11:04:37 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/pgbnimfaaifjpebleldfhgcjdnaeafdi/24.10.2_0/popup.html[22m
+[2m11:05:26 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/nmmhkkegccagdldgiimedpiccmgmieda/1.0.0.6_0/html/craw_window.html[22m
+[2m11:05:26 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_302930735/CRX_INSTALL/offscreendocument.html[22m
+[2m11:05:28 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_302930735/CRX_INSTALL/offscreendocument.html[22m
+[2m11:05:28 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/ghbmnnjooekpmoecnnnilnnbdlolhkhi/1.106.1_0/offscreendocument.html[22m
+[2m11:05:30 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/about.html[22m
+[2m11:05:30 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/activate_banner_mb.html[22m
+[2m11:05:30 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/dfd_landing_page.html[22m
+[2m11:05:30 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/ff_policy.html[22m
+[2m11:05:30 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/ff_policy2.html[22m
+[2m11:05:30 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/foreground_sidebar_main.html[22m
+[2m11:05:30 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/how_it_works.html[22m
+[2m11:05:30 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/iframe_block_page.html[22m
+[2m11:05:30 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/nps_survey.html[22m
+[2m11:05:30 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/page_banner_mb.html[22m
+[2m11:05:30 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/preference.html[22m
+[2m11:05:30 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/settings.html[22m
+[2m11:05:30 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/site_status_block_page.html[22m
+[2m11:05:30 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/site_status_site_report.html[22m
+[2m11:05:30 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/site_status_typosquatting.html[22m
+[2m11:05:30 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/statistics.html[22m
+[2m11:05:30 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/whitelist.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/balloon_message/advanced_protection_signal.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/balloon_message/advanced_protection_signal_toast.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/balloon_message/download_scan_popup.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/balloon_message/dws.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/balloon_message/esd_enrolled_detection_toast.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/balloon_message/esd_enrolled_intro_toast.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/balloon_message/esd_toast.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/balloon_message/no_native_toast.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/sidebar/sidebar_rat_detection.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/topbar/topbar_iframe_block.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/topright_bar/web_boost_upsell_right.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/topright_bar/web_boost_upsell_top.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/balloon_message/advanced_protection_signal.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/balloon_message/advanced_protection_signal_toast.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/balloon_message/download_scan_popup.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/balloon_message/dws.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/balloon_message/esd_enrolled_detection_toast.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/balloon_message/esd_enrolled_intro_toast.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/balloon_message/esd_toast.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/balloon_message/no_native_toast.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/topright_bar/web_boost_upsell_right.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/topright_bar/web_boost_upsell_top.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/topbar/topbar_iframe_block.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/sidebar/sidebar_rat_detection.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/about.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/activate_banner_mb.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/dfd_landing_page.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/ff_policy.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/ff_policy2.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/foreground_sidebar_main.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/how_it_works.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/iframe_block_page.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/nps_survey.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/page_banner_mb.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/preference.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/settings.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/site_status_block_page.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/site_status_site_report.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/site_status_typosquatting.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/statistics.html[22m
+[2m11:05:31 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/Temp/scoped_dir15996_1433067444/CRX_INSTALL/html/whitelist.html[22m
+[2m11:05:32 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/about.html[22m
+[2m11:05:32 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/activate_banner_mb.html[22m
+[2m11:05:32 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/dfd_landing_page.html[22m
+[2m11:05:32 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/ff_policy.html[22m
+[2m11:05:32 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/ff_policy2.html[22m
+[2m11:05:32 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/foreground_sidebar_main.html[22m
+[2m11:05:32 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/how_it_works.html[22m
+[2m11:05:32 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/iframe_block_page.html[22m
+[2m11:05:32 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/nps_survey.html[22m
+[2m11:05:32 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/page_banner_mb.html[22m
+[2m11:05:32 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/preference.html[22m
+[2m11:05:32 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/settings.html[22m
+[2m11:05:32 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/site_status_block_page.html[22m
+[2m11:05:32 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/site_status_site_report.html[22m
+[2m11:05:32 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/site_status_typosquatting.html[22m
+[2m11:05:32 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/statistics.html[22m
+[2m11:05:32 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/whitelist.html[22m
+[2m11:05:33 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/balloon_message/advanced_protection_signal.html[22m
+[2m11:05:33 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/balloon_message/advanced_protection_signal_toast.html[22m
+[2m11:05:33 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/balloon_message/download_scan_popup.html[22m
+[2m11:05:33 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/balloon_message/dws.html[22m
+[2m11:05:33 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/balloon_message/esd_enrolled_detection_toast.html[22m
+[2m11:05:33 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/balloon_message/esd_enrolled_intro_toast.html[22m
+[2m11:05:33 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/balloon_message/esd_toast.html[22m
+[2m11:05:33 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/balloon_message/no_native_toast.html[22m
+[2m11:05:33 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/topbar/topbar_iframe_block.html[22m
+[2m11:05:33 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/sidebar/sidebar_rat_detection.html[22m
+[2m11:05:33 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/topright_bar/web_boost_upsell_right.html[22m
+[2m11:05:33 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/topright_bar/web_boost_upsell_top.html[22m
+[2m11:05:33 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/sidebar/sidebar_main/sidebar_esd.html[22m
+[2m11:05:33 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/sidebar/sidebar_main/sidebar_home.html[22m
+[2m11:05:34 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/sidebar/sidebar_main/sidebar_main.html[22m
+[2m11:05:34 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/sidebar/sidebar_main/sidebar_mb.html[22m
+[2m11:05:34 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/sidebar/sidebar_main/sidebar_mb_faq.html[22m
+[2m11:08:32 am[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/CameraController.tsx[22m
+[2m11:09:54 am[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/HUD.tsx[22m
+[2m11:11:30 am[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/Environment.tsx[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/balloon_message/advanced_protection_signal.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/balloon_message/advanced_protection_signal_toast.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/balloon_message/download_scan_popup.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/balloon_message/dws.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/balloon_message/esd_enrolled_detection_toast.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/balloon_message/esd_enrolled_intro_toast.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/balloon_message/esd_toast.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/balloon_message/no_native_toast.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/about.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/activate_banner_mb.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/dfd_landing_page.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/ff_policy.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/ff_policy2.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/foreground_sidebar_main.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/how_it_works.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/iframe_block_page.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/nps_survey.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/page_banner_mb.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/preference.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/settings.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/site_status_block_page.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/site_status_site_report.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/site_status_typosquatting.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/statistics.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/whitelist.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/topbar/topbar_iframe_block.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/sidebar/sidebar_rat_detection.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/sidebar/sidebar_main/sidebar_esd.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/sidebar/sidebar_main/sidebar_home.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/sidebar/sidebar_main/sidebar_main.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/sidebar/sidebar_main/sidebar_mb.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/sidebar/sidebar_main/sidebar_mb_faq.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/topright_bar/web_boost_upsell_right.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/fheoggkfdfchfphceeifdbepaooicaho/8.1.0.9285_0/html/topright_bar/web_boost_upsell_top.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/ghbmnnjooekpmoecnnnilnnbdlolhkhi/1.106.1_0/offscreendocument.html[22m
+[2m11:15:20 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/nmmhkkegccagdldgiimedpiccmgmieda/1.0.0.6_0/html/craw_window.html[22m
+[2m11:15:21 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/pgbnimfaaifjpebleldfhgcjdnaeafdi/24.10.2_0/markerTab.html[22m
+[2m11:15:21 am[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m.chrome-verify-profile/Default/Extensions/pgbnimfaaifjpebleldfhgcjdnaeafdi/24.10.2_0/popup.html[22m
+[2m12:03:26 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/Game.tsx, /src/components/game/WorldManager.tsx, /src/components/game/Track.tsx, /src/components/effects/SparklePool.tsx, /src/components/game/CameraController.tsx, /src/components/game/Obstacles.tsx, /src/components/game/Environment.tsx, /src/components/game/Coins.tsx, /src/components/ui/MobileControls.tsx, /src/components/ui/PauseMenu.tsx, /src/components/game/Player.tsx, /src/components/ui/DebugOverlay.tsx, /src/components/ui/MainMenu.tsx, /src/components/effects/CoinFX.tsx, /src/components/ui/GameOver.tsx, /src/components/ui/HUD.tsx[22m
+[2m12:03:42 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/Game.tsx, /src/components/game/WorldManager.tsx, /src/components/game/Track.tsx, /src/components/effects/SparklePool.tsx, /src/components/game/CameraController.tsx, /src/components/game/Obstacles.tsx, /src/components/game/Environment.tsx, /src/components/game/Coins.tsx, /src/components/ui/MobileControls.tsx, /src/components/ui/PauseMenu.tsx, /src/components/game/Player.tsx, /src/components/ui/DebugOverlay.tsx, /src/components/ui/MainMenu.tsx, /src/components/effects/CoinFX.tsx, /src/components/ui/GameOver.tsx, /src/components/ui/HUD.tsx[22m
+[2m12:04:01 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/Game.tsx, /src/components/game/WorldManager.tsx, /src/components/game/Track.tsx, /src/components/effects/SparklePool.tsx, /src/components/game/CameraController.tsx, /src/components/game/Obstacles.tsx, /src/components/game/Environment.tsx, /src/components/game/Coins.tsx, /src/components/ui/MobileControls.tsx, /src/components/ui/PauseMenu.tsx, /src/components/game/Player.tsx, /src/components/ui/DebugOverlay.tsx, /src/components/ui/MainMenu.tsx, /src/components/effects/CoinFX.tsx, /src/components/ui/GameOver.tsx, /src/components/ui/HUD.tsx[22m
+[2m12:04:16 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/WorldManager.tsx[22m
+[2m12:04:47 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/WorldManager.tsx[22m
+[2m12:04:59 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/Game.tsx, /src/components/game/Track.tsx, /src/components/game/WorldManager.tsx, /src/components/effects/SparklePool.tsx, /src/components/game/CameraController.tsx, /src/components/game/Obstacles.tsx, /src/components/game/Environment.tsx, /src/components/game/Coins.tsx, /src/components/ui/MobileControls.tsx, /src/components/ui/PauseMenu.tsx, /src/components/game/Player.tsx, /src/components/ui/DebugOverlay.tsx, /src/components/ui/MainMenu.tsx, /src/components/effects/CoinFX.tsx, /src/components/ui/GameOver.tsx, /src/components/ui/HUD.tsx[22m
+[2m12:05:07 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/WorldManager.tsx[22m
+[2m12:05:28 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/WorldManager.tsx[22m
+[2m12:05:38 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/Track.tsx[22m
+[2m12:06:07 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/Track.tsx[22m
+[2m12:06:46 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/Environment.tsx[22m
+[2m12:07:03 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/Environment.tsx[22m
+[2m12:07:12 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/Environment.tsx[22m
+[2m12:07:23 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/InstancedModel.tsx[22m
+[2m12:07:23 pm[22m [36m[1m[vite][22m[39m [33mhmr invalidate [39m[2m/src/components/game/InstancedModel.tsx[22m Could not Fast Refresh ("useInstancedModelSources" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m12:07:23 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/Obstacles.tsx, /src/components/game/Environment.tsx, /src/components/game/Coins.tsx[22m
+[2m12:07:36 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/Obstacles.tsx[22m
+[2m12:08:04 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/Coins.tsx[22m
+[2m12:08:18 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/Coins.tsx[22m
+[2m12:08:29 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/Player.tsx, /src/components/game/InstancedModel.tsx[22m
+[2m12:08:29 pm[22m [36m[1m[vite][22m[39m [33mhmr invalidate [39m[2m/src/components/game/InstancedModel.tsx[22m Could not Fast Refresh ("useInstancedModelSources" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m12:08:29 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/Obstacles.tsx, /src/components/game/Environment.tsx, /src/components/game/Coins.tsx[22m
+[2m12:09:24 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/Player.tsx[22m
+[2m12:09:31 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/Player.tsx[22m
+[2m12:09:52 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/Player.tsx[22m
+[2m12:10:01 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/Player.tsx[22m
+[2m12:10:45 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/Game.tsx[22m
+[2m12:10:53 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/Game.tsx, /src/components/ui/MobileControls.tsx, /src/components/ui/PauseMenu.tsx, /src/components/game/Player.tsx, /src/components/ui/MainMenu.tsx, /src/components/ui/GameOver.tsx[22m
+[2m12:11:52 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/game/Game.tsx, /src/components/ui/MobileControls.tsx, /src/components/ui/PauseMenu.tsx, /src/components/game/Player.tsx, /src/components/ui/MainMenu.tsx, /src/components/ui/GameOver.tsx[22m
+[2m12:12:04 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/MainMenu.tsx[22m
+[2m12:13:01 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/PauseMenu.tsx[22m
