@@ -2,8 +2,8 @@ import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
-import { useGameStore, worldZRef } from '../../store/gameStore';
-import { LANE_POSITIONS, TARGET_COIN_SIZE } from '../../config/constants';
+import { jumpYRef, playerXRef, useGameStore, worldZRef } from '../../store/gameStore';
+import { GROUND_COIN_Y, LANE_POSITIONS, MAGNET_RADIUS, TARGET_COIN_SIZE } from '../../config/constants';
 import { CoinData } from '../../types/game';
 import { InstancedModelSource, useInstancedModelSources } from './InstancedModel';
 
@@ -37,6 +37,10 @@ function boostCoinMaterial(material: THREE.Material | THREE.Material[]): THREE.M
   return Array.isArray(material) ? material.map(tune) : tune(material);
 }
 
+function getCoinX(coin: CoinData): number {
+  return LANE_POSITIONS[coin.lane + 1] + (coin.xOffset ?? 0);
+}
+
 function CoinLayer({ source, coins }: { source: InstancedModelSource; coins: CoinData[] }) {
   const meshRef = useRef<THREE.InstancedMesh>(null!);
   const itemMatrix = useRef(new THREE.Matrix4());
@@ -48,14 +52,37 @@ function CoinLayer({ source, coins }: { source: InstancedModelSource; coins: Coi
   const writeMatrices = (time: number, computeBounds = false) => {
     const mesh = meshRef.current;
     if (!mesh) return;
+    const state = useGameStore.getState();
+    const isMagnetActive = state.activePowerups.has('magnet');
+    const magnetTargetX = playerXRef.current;
+    const magnetTargetY = jumpYRef.current + 0.85;
+    const worldZ = worldZRef.current;
 
     for (let i = 0; i < coins.length; i++) {
       const coin = coins[i];
       const phase = hashUnit(coin.id) * Math.PI * 2;
       const spin = time * 4.2 + phase;
-      const y = 0.9 + Math.sin(time * 3 + phase) * 0.08;
+      const baseY = coin.y ?? GROUND_COIN_Y;
+      let x = getCoinX(coin);
+      let y = baseY + Math.sin(time * 3 + phase) * 0.08;
+      let z = coin.z;
 
-      position.current.set(LANE_POSITIONS[coin.lane + 1], y, coin.z);
+      if (isMagnetActive) {
+        const coinWorldZ = coin.z + worldZ;
+        const dx = x - magnetTargetX;
+        const dy = baseY - magnetTargetY;
+        const dz = coinWorldZ;
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+        if (dist < MAGNET_RADIUS) {
+          const pull = Math.pow(1 - dist / MAGNET_RADIUS, 1.7) * 0.92;
+          x = THREE.MathUtils.lerp(x, magnetTargetX, pull);
+          y = THREE.MathUtils.lerp(y, magnetTargetY, pull);
+          z = THREE.MathUtils.lerp(z, -worldZ, pull);
+        }
+      }
+
+      position.current.set(x, y, z);
       quaternion.current.setFromAxisAngle(Y_AXIS, spin);
       itemMatrix.current.compose(position.current, quaternion.current, scale.current);
       finalMatrix.current.multiplyMatrices(itemMatrix.current, source.matrix);
@@ -91,6 +118,7 @@ export default function Coins() {
   const groupRef = useRef<THREE.Group>(null!);
   const chunks = useGameStore(s => s.chunks);
   const collectedCoinIds = useGameStore(s => s.collectedCoinIds);
+  const isJetpackActive = useGameStore(s => s.isJetpackActive);
   const sources = useInstancedModelSources(COIN_URL, TARGET_COIN_SIZE, { centerXZ: true });
   const readableSources = useMemo(
     () => sources.map(source => ({ ...source, material: boostCoinMaterial(source.material) })),
@@ -102,8 +130,11 @@ export default function Coins() {
   });
 
   const visibleCoins = useMemo(
-    () => chunks.flatMap(c => c.coins).filter(coin => !collectedCoinIds.has(coin.id)),
-    [chunks, collectedCoinIds]
+    () => chunks
+      .flatMap(c => c.coins)
+      .filter(coin => !collectedCoinIds.has(coin.id))
+      .filter(coin => coin.kind !== 'aerial' || isJetpackActive),
+    [chunks, collectedCoinIds, isJetpackActive]
   );
 
   return (

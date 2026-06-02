@@ -43,6 +43,8 @@ export const TARGET_UP_OBS_HEIGHT = 2.2;
 export const TARGET_DOWN_OBS_HEIGHT = 2.35;
 export const TARGET_TRAIN_HEIGHT = 4.4;
 export const TARGET_COIN_SIZE = 0.68;
+export const TARGET_POWERUP_HEIGHT = 1.25;
+export const GROUND_COIN_Y = 0.9;
 
 // Powerup configuration.
 export const POWERUP_SPAWN_CHANCE = 0.12;   // chance per chunk
@@ -51,9 +53,13 @@ export const POWERUP_SNEAKERS_DURATION = 10;
 export const POWERUP_MULTIPLIER_DURATION = 15;
 export const POWERUP_JETPACK_DURATION = 10;
 export const MAGNET_RADIUS = 6.0;
-export const SNEAKERS_JUMP_MULTIPLIER = 1.6;
+export const MAGNET_COLLECT_RADIUS = 1.45;
+export const SNEAKERS_JUMP_MULTIPLIER = 2.0;
 export const JETPACK_HEIGHT = 6.0;
+export const AERIAL_COIN_Y = JETPACK_HEIGHT + 0.75;
 export const POWERUP_COLLECT_RADIUS = 1.6;
+export const POWERUP_PICKUP_Y = 1.05;
+export const CRASH_GAME_OVER_DELAY_MS = 780;
 
 // Missions.
 export const MISSIONS_CONFIG = [

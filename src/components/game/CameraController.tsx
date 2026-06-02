@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { INITIAL_SPEED, MAX_SPEED, LANE_POSITIONS } from '../../config/constants';
+import { INITIAL_SPEED, JETPACK_HEIGHT, MAX_SPEED, LANE_POSITIONS } from '../../config/constants';
 import { useGameStore, jumpYRef } from '../../store/gameStore';
 
 const FOLLOW_OFFSET = new THREE.Vector3(0, 4.15, 8.15);
@@ -18,6 +18,7 @@ export default function CameraController() {
   const smoothedLaneX = useRef(0);
   const crashShake = useRef(0);
   const prevGameState = useRef('menu');
+  const prevCrashVersion = useRef(0);
 
   useEffect(() => {
     if (camera instanceof THREE.PerspectiveCamera) {
@@ -29,9 +30,14 @@ export default function CameraController() {
   }, [camera]);
 
   useFrame(({ clock }, delta) => {
-    const { gameState, targetLane, isWarning, speed } = useGameStore.getState();
+    const { gameState, targetLane, isWarning, speed, isJetpackActive, crashVersion } = useGameStore.getState();
     const followT = 1 - Math.pow(1 - 0.095, delta * 60);
     const laneT = 1 - Math.pow(1 - 0.18, delta * 60);
+
+    if (crashVersion !== prevCrashVersion.current) {
+      prevCrashVersion.current = crashVersion;
+      crashShake.current = Math.max(crashShake.current, 1.7);
+    }
 
     if (camera instanceof THREE.PerspectiveCamera) {
       const fovTarget = THREE.MathUtils.lerp(BASE_FOV, MAX_FOV_V2, (speed - INITIAL_SPEED) / (MAX_SPEED - INITIAL_SPEED));
@@ -48,19 +54,21 @@ export default function CameraController() {
       const aspect = size.width / Math.max(1, size.height);
       const portraitBias = Math.max(0, 0.9 - aspect);
       const speedPullback = Math.min(2.5, Math.max(0, speed - INITIAL_SPEED) * 0.12);
-      const followY = FOLLOW_OFFSET.y + portraitBias * 1.5;
-      const followZ = FOLLOW_OFFSET.z + speedPullback + portraitBias * 11.5;
-      const lookY = LOOK_OFFSET.y - portraitBias * 0.35;
-      const lookZ = LOOK_OFFSET.z - portraitBias * 0.7;
+      const altitudeT = Math.min(1, jumpY / JETPACK_HEIGHT);
+      const jetpackT = isJetpackActive ? Math.max(0.35, altitudeT) : altitudeT * 0.45;
+      const followY = FOLLOW_OFFSET.y + portraitBias * 1.5 + jetpackT * 1.85;
+      const followZ = FOLLOW_OFFSET.z + speedPullback + portraitBias * 11.5 + jetpackT * 1.15;
+      const lookY = LOOK_OFFSET.y - portraitBias * 0.35 + jetpackT * 1.25;
+      const lookZ = LOOK_OFFSET.z - portraitBias * 0.7 - jetpackT * 0.55;
 
       desiredPos.current.set(
         smoothedLaneX.current * 0.52,
-        followY + jumpY * 0.22,
+        followY + jumpY * (isJetpackActive ? 0.46 : 0.22),
         followZ
       );
       desiredLook.current.set(
         smoothedLaneX.current * 0.9,
-        lookY + jumpY * 0.36,
+        lookY + jumpY * (isJetpackActive ? 0.58 : 0.36),
         lookZ
       );
 
@@ -105,4 +113,3 @@ export default function CameraController() {
 
   return null;
 }
-

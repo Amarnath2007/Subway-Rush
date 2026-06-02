@@ -23,8 +23,9 @@ function CoinCounter({ coins }: { coins: number }) {
 }
 
 export default function HUD() {
-  const { score, bestScore, coins, chaseMeter, isWarning, missions, pauseGame, speed } = useGameStore();
+  const { score, bestScore, coins, pauseGame, speed, activePowerups } = useGameStore();
   const level = Math.max(1, Math.floor(speed / 5));
+  const isMultiplierActive = activePowerups.has('multiplier');
 
   return (
     <>
@@ -64,6 +65,24 @@ export default function HUD() {
           <div style={{ color: '#ffd700', fontSize: '0.7rem', fontWeight: 800, letterSpacing: 2 }}>
             ×{level} ⭐
           </div>
+          {isMultiplierActive && (
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginTop: 4,
+              marginBottom: 3,
+              padding: '2px 9px',
+              borderRadius: 8,
+              background: 'linear-gradient(135deg,#fbbf24,#f97316)',
+              color: '#1a0a00',
+              fontSize: '0.68rem',
+              fontWeight: 900,
+              boxShadow: '0 0 14px rgba(251,191,36,0.58)',
+            }}>
+              x2 SCORE
+            </div>
+          )}
           <div style={{
             color: '#fff', fontSize: 'clamp(1.5rem, 4vw, 2.1rem)',
             fontWeight: 900, lineHeight: 1, fontVariantNumeric: 'tabular-nums',
@@ -88,69 +107,6 @@ export default function HUD() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '1.2rem', margin: '4px auto 0',
           }}>🏃</div>
-        </div>
-      </div>
-
-      {/* ── Missions panel (right side) ── */}
-      <div className="missions-panel" style={{
-        position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-        width: 182, background: 'rgba(0,0,0,0.52)', backdropFilter: 'blur(10px)',
-        borderRadius: 18, padding: '12px 14px',
-        border: '1px solid rgba(255,255,255,0.1)',
-        fontFamily: "'Segoe UI', system-ui, sans-serif",
-        pointerEvents: 'none',
-      }}>
-        <div style={{ color: '#ffd700', fontSize: '0.68rem', fontWeight: 800, letterSpacing: 2, marginBottom: 10, textAlign: 'center' }}>
-          MISSIONS
-        </div>
-        {missions.map(m => (
-          <div key={m.id} style={{ marginBottom: 11 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: '1rem' }}>{m.icon}</span>
-              <div>
-                <div style={{ color: '#fff', fontSize: '0.66rem', fontWeight: 600 }}>{m.label}</div>
-                <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.6rem' }}>{m.current}/{m.target}</div>
-              </div>
-              {m.current >= m.target && <span style={{ marginLeft: 'auto', color: '#4caf50', fontSize: '0.8rem' }}>✓</span>}
-            </div>
-            <Bar pct={m.current / m.target} />
-          </div>
-        ))}
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 4, textAlign: 'center' }}>
-          <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.6rem', marginBottom: 4 }}>HIGH SCORE</div>
-          <div style={{ color: '#ffd700', fontWeight: 800, fontSize: '0.88rem' }}>{String(bestScore).padStart(6, '0')}</div>
-        </div>
-      </div>
-
-      {/* ── Chase meter ── */}
-      <div style={{
-        position: 'absolute', bottom: 88, left: '50%', transform: 'translateX(-50%)',
-        width: 'min(280px, 78vw)', pointerEvents: 'none',
-        fontFamily: "'Segoe UI', system-ui, sans-serif",
-      }}>
-        {isWarning && (
-          <div style={{
-            textAlign: 'center', color: '#ff4444',
-            fontSize: '0.75rem', fontWeight: 800, letterSpacing: 3,
-            marginBottom: 5, animation: 'blink 0.45s linear infinite',
-          }}>⚠️ POLICE CLOSING IN ⚠️</div>
-        )}
-        <div style={{
-          background: 'rgba(0,0,0,0.5)', borderRadius: 20, padding: '5px 10px',
-          backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.1)',
-          display: 'flex', alignItems: 'center', gap: 8,
-        }}>
-          <span style={{ fontSize: '1rem' }}>👮</span>
-          <div style={{ flex: 1, height: 9, background: 'rgba(255,255,255,0.1)', borderRadius: 5, overflow: 'hidden' }}>
-            <div style={{
-              height: '100%', width: `${chaseMeter}%`,
-              background: chaseMeter > 65 ? 'linear-gradient(90deg,#ff4444,#ff0000)' : 'linear-gradient(90deg,#4caf50,#ffd700)',
-              borderRadius: 5, transition: 'width 0.1s ease, background 0.3s ease',
-            }} />
-          </div>
-          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', fontWeight: 700, minWidth: 28, textAlign: 'right' }}>
-            {Math.round(chaseMeter)}%
-          </span>
         </div>
       </div>
 

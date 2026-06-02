@@ -1,6 +1,6 @@
 export type GameState = 'menu' | 'playing' | 'paused' | 'gameover';
 export type Lane = -1 | 0 | 1; // left, center, right
-export type PlayerAction = 'run' | 'jump' | 'slide';
+export type PlayerAction = 'run' | 'jump' | 'slide' | 'fly' | 'hit';
 
 export type PowerupType = 'magnet' | 'sneakers' | 'multiplier' | 'jetpack';
 
@@ -9,6 +9,7 @@ export interface ObstacleData {
   lane: Lane;
   z: number;
   type: 'up' | 'down' | 'train';
+  trainVariant?: 'train1' | 'train2';
 }
 
 export interface CoinData {
@@ -16,6 +17,9 @@ export interface CoinData {
   lane: Lane;
   z: number;
   collected: boolean;
+  kind?: 'ground' | 'aerial';
+  y?: number;
+  xOffset?: number;
 }
 
 export interface PowerupData {

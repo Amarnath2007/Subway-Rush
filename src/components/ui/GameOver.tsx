@@ -8,7 +8,6 @@ export default function GameOver() {
   const isNewBest  = score >= bestScore && score > 0;
 
   useEffect(() => {
-    soundManager.playCrash();
     const el = panelRef.current;
     if (!el) return;
     el.style.opacity = '0';

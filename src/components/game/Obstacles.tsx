@@ -9,11 +9,13 @@ import { InstancedModelBatch, InstancedModelItem } from './InstancedModel';
 
 const UP_URL = '/assets/Environment/up_obstacle.glb';
 const DOWN_URL = '/assets/Environment/down_obstacle.glb';
-const TRAIN_URL = '/assets/Environment/subway_surfers_train.glb';
+const TRAIN_URL_1 = '/assets/Environment/subway_surfers_train.glb';
+const TRAIN_URL_2 = '/assets/Environment/subway_surfers_train2.glb';
 
 useGLTF.preload(UP_URL);
 useGLTF.preload(DOWN_URL);
-useGLTF.preload(TRAIN_URL);
+useGLTF.preload(TRAIN_URL_1);
+useGLTF.preload(TRAIN_URL_2);
 
 function toItem(obs: ObstacleData): InstancedModelItem {
   const base = {
@@ -52,13 +54,21 @@ export default function Obstacles() {
   const obstacles = useMemo(() => chunks.flatMap(chunk => chunk.obstacles), [chunks]);
   const upItems = useMemo(() => obstacles.filter(obs => obs.type === 'up').map(toItem), [obstacles]);
   const downItems = useMemo(() => obstacles.filter(obs => obs.type === 'down').map(toItem), [obstacles]);
-  const trainItems = useMemo(() => obstacles.filter(obs => obs.type === 'train').map(toItem), [obstacles]);
+  const train1Items = useMemo(
+    () => obstacles.filter(obs => obs.type === 'train' && obs.trainVariant !== 'train2').map(toItem),
+    [obstacles]
+  );
+  const train2Items = useMemo(
+    () => obstacles.filter(obs => obs.type === 'train' && obs.trainVariant === 'train2').map(toItem),
+    [obstacles]
+  );
 
   return (
     <group ref={groupRef}>
       <InstancedModelBatch url={UP_URL} targetHeight={TARGET_UP_OBS_HEIGHT} items={upItems} />
       <InstancedModelBatch url={DOWN_URL} targetHeight={TARGET_DOWN_OBS_HEIGHT} items={downItems} />
-      <InstancedModelBatch url={TRAIN_URL} targetHeight={TARGET_TRAIN_HEIGHT} items={trainItems} />
+      <InstancedModelBatch url={TRAIN_URL_1} targetHeight={TARGET_TRAIN_HEIGHT} items={train1Items} />
+      <InstancedModelBatch url={TRAIN_URL_2} targetHeight={TARGET_TRAIN_HEIGHT} items={train2Items} />
     </group>
   );
 }

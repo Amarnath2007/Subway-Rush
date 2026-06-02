@@ -1,5 +1,5 @@
 import { ChunkData, CoinData, EnvProp, Lane, ObstacleData, PowerupData, PowerupType } from '../types/game';
-import { CHUNK_LENGTH, POWERUP_SPAWN_CHANCE } from '../config/constants';
+import { AERIAL_COIN_Y, CHUNK_LENGTH, GROUND_COIN_Y, POWERUP_SPAWN_CHANCE } from '../config/constants';
 
 let gid = 0;
 const uid = () => `e${++gid}`;
@@ -25,12 +25,14 @@ function shuffle<T>(items: T[]): T[] {
   return copy;
 }
 
-function coinLine(lane: Lane, startZ: number, count: number): CoinData[] {
+function coinLine(lane: Lane, startZ: number, count: number, spacing = 2.4): CoinData[] {
   return Array.from({ length: count }, (_, i) => ({
     id: uid(),
     lane,
-    z: startZ - i * 2.4,
+    z: startZ - i * spacing,
     collected: false,
+    kind: 'ground',
+    y: GROUND_COIN_Y,
   }));
 }
 
@@ -41,7 +43,72 @@ function coinSweep(startZ: number): CoinData[] {
     lane,
     z: startZ - i * 1.8,
     collected: false,
+    kind: 'ground',
+    y: GROUND_COIN_Y,
   }));
+}
+
+function aerialLaneLine(lane: Lane, startZ: number, count: number): CoinData[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: uid(),
+    lane,
+    z: startZ - i * 1.65,
+    collected: false,
+    kind: 'aerial',
+    y: AERIAL_COIN_Y + Math.sin(i * 0.55) * 0.18,
+  }));
+}
+
+function aerialCurve(startZ: number, count: number): CoinData[] {
+  return Array.from({ length: count }, (_, i) => {
+    const t = count <= 1 ? 0 : i / (count - 1);
+    return {
+      id: uid(),
+      lane: 0,
+      z: startZ - i * 1.55,
+      collected: false,
+      kind: 'aerial',
+      y: AERIAL_COIN_Y + Math.sin(t * Math.PI * 2) * 0.55,
+      xOffset: Math.sin(t * Math.PI * 2) * 2.8,
+    };
+  });
+}
+
+function generateAerialCoins(index: number, chunkZ: number): CoinData[] {
+  if (index < 8) return [];
+
+  const leadZ = chunkZ - CHUNK_LENGTH * 0.16;
+  const pattern = index % 4;
+
+  if (pattern === 0) {
+    return [
+      ...aerialLaneLine(-1, leadZ, 10),
+      ...aerialLaneLine(0, leadZ - 0.55, 10),
+      ...aerialLaneLine(1, leadZ - 1.1, 10),
+    ];
+  }
+
+  if (pattern === 1) {
+    return [
+      ...aerialCurve(leadZ, 22),
+      ...aerialLaneLine(randomLane(), leadZ - 24, 9),
+    ];
+  }
+
+  if (pattern === 2) {
+    return [
+      ...aerialLaneLine(-1, leadZ, 8),
+      ...aerialCurve(leadZ - 10, 18),
+      ...aerialLaneLine(1, leadZ - 31, 8),
+    ];
+  }
+
+  return [
+    ...aerialLaneLine(-1, leadZ, 7),
+    ...aerialLaneLine(0, leadZ - 9, 7),
+    ...aerialLaneLine(1, leadZ - 18, 7),
+    ...aerialCurve(leadZ - 28, 12),
+  ];
 }
 
 function generateObstacles(index: number, chunkZ: number, difficulty: number): ObstacleData[] {
@@ -57,7 +124,13 @@ function generateObstacles(index: number, chunkZ: number, difficulty: number): O
     const lane = randomLane();
 
     if (roll < 0.28) {
-      obstacles.push({ id: uid(), lane, z, type: 'train' });
+      obstacles.push({
+        id: uid(),
+        lane,
+        z,
+        type: 'train',
+        trainVariant: Math.random() < 0.5 ? 'train1' : 'train2',
+      });
     } else if (roll < 0.62) {
       obstacles.push({ id: uid(), lane, z, type: 'up' });
     } else {
@@ -71,24 +144,25 @@ function generateObstacles(index: number, chunkZ: number, difficulty: number): O
 function generateCoins(index: number, chunkZ: number): CoinData[] {
   if (index < 3) return coinLine(0, chunkZ - 8, 5);
 
+  const aerialCoins = generateAerialCoins(index, chunkZ);
+
   const pattern = Math.random();
+  let groundCoins: CoinData[];
   if (pattern < 0.35) {
-    return coinLine(randomLane(), chunkZ - CHUNK_LENGTH * 0.55, 6);
-  }
-
-  if (pattern < 0.6) {
-    return coinSweep(chunkZ - CHUNK_LENGTH * 0.45);
-  }
-
-  if (pattern < 0.8) {
+    groundCoins = coinLine(randomLane(), chunkZ - CHUNK_LENGTH * 0.55, 6);
+  } else if (pattern < 0.6) {
+    groundCoins = coinSweep(chunkZ - CHUNK_LENGTH * 0.45);
+  } else if (pattern < 0.8) {
     const [laneA, laneB] = shuffle(LANES).slice(0, 2) as [Lane, Lane];
-    return [
+    groundCoins = [
       ...coinLine(laneA, chunkZ - CHUNK_LENGTH * 0.3, 3),
       ...coinLine(laneB, chunkZ - CHUNK_LENGTH * 0.6, 3),
     ];
+  } else {
+    groundCoins = coinLine(randomLane(), chunkZ - CHUNK_LENGTH * 0.65, 8);
   }
 
-  return coinLine(randomLane(), chunkZ - CHUNK_LENGTH * 0.65, 8);
+  return [...groundCoins, ...aerialCoins];
 }
 
 function generatePowerups(index: number, chunkZ: number): PowerupData[] {
@@ -200,4 +274,3 @@ export function generateChunk(index: number, chunkZ: number, cfg: Cfg = {}): Chu
     envProps: generateEnvironmentProps(chunkZ, envDensity),
   };
 }
-

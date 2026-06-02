@@ -10,8 +10,8 @@ export function useInputHandler() {
   const jumpBufferRef = useRef<number>(0);
 
   const moveLeft = () => {
-    const { gameState, targetLane } = useGameStore.getState();
-    if (gameState !== 'playing') return;
+    const { gameState, targetLane, isGameOverPending } = useGameStore.getState();
+    if (gameState !== 'playing' || isGameOverPending) return;
     const newLane = Math.max(-1, targetLane - 1) as Lane;
     if (newLane !== targetLane) {
       useGameStore.getState().setTargetLane(newLane);
@@ -20,8 +20,8 @@ export function useInputHandler() {
   };
 
   const moveRight = () => {
-    const { gameState, targetLane } = useGameStore.getState();
-    if (gameState !== 'playing') return;
+    const { gameState, targetLane, isGameOverPending } = useGameStore.getState();
+    if (gameState !== 'playing' || isGameOverPending) return;
     const newLane = Math.min(1, targetLane + 1) as Lane;
     if (newLane !== targetLane) {
       useGameStore.getState().setTargetLane(newLane);
@@ -30,8 +30,8 @@ export function useInputHandler() {
   };
 
   const doJump = () => {
-    const { gameState, isJumping, isSliding } = useGameStore.getState();
-    if (gameState !== 'playing') return;
+    const { gameState, isJumping, isSliding, isJetpackActive, isGameOverPending } = useGameStore.getState();
+    if (gameState !== 'playing' || isJetpackActive || isGameOverPending) return;
     
     if (isJumping) {
       jumpBufferRef.current = performance.now();
@@ -50,8 +50,8 @@ export function useInputHandler() {
   };
 
   const doSlide = () => {
-    const { gameState, isSliding } = useGameStore.getState();
-    if (gameState !== 'playing' || isSliding) return;
+    const { gameState, isSliding, isJetpackActive, isGameOverPending } = useGameStore.getState();
+    if (gameState !== 'playing' || isSliding || isJetpackActive || isGameOverPending) return;
     
     // Slide can happen while jumping to force descend
     useGameStore.getState().setSliding(true);
@@ -142,4 +142,3 @@ export function useInputHandler() {
     return () => cancelAnimationFrame(animId);
   }, []);
 }
-

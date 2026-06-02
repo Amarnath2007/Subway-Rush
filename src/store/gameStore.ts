@@ -12,6 +12,7 @@ import { qualityManager, QualityTier } from '../utils/qualityManager';
 // Player writes to this every frame; CameraController reads it.
 // Keeping it outside Zustand avoids 60fps state updates (Bug 14).
 export const jumpYRef = { current: 0 };
+export const playerXRef = { current: 0 };
 export const worldZRef = { current: 0 };
 
 const runtime = {
@@ -23,6 +24,7 @@ const runtime = {
 
 const resetRuntime = () => {
   jumpYRef.current = 0;
+  playerXRef.current = 0;
   worldZRef.current = 0;
   runtime.score = 0;
   runtime.speed = INITIAL_SPEED;
@@ -48,6 +50,7 @@ interface GameStore {
   worldZ: number;
   chunks: ChunkData[];
   collectedCoinIds: Set<string>;
+  collectedPowerupIds: Set<string>;
   chunkCounter: number;
 
   missions: Mission[];
@@ -60,6 +63,8 @@ interface GameStore {
   // Powerups state
   activePowerups: Map<PowerupType, ActivePowerup>;
   isJetpackActive: boolean;
+  isGameOverPending: boolean;
+  crashVersion: number;
 
   // Actions
   startGame: () => void;
@@ -79,6 +84,7 @@ interface GameStore {
   removeChunk: (id: string) => void;
   setChunks: (chunks: ChunkData[], chunkCounter: number) => void;
   collectCoin: (id: string) => void;
+  collectPowerup: (id: string, type: PowerupType) => void;
   incrementJump: () => void;
   incrementSlide: () => void;
   updateChaseMeter: (delta: number) => void;
@@ -86,6 +92,7 @@ interface GameStore {
 
   // Powerup actions
   activatePowerup: (type: PowerupType) => void;
+  beginCrash: () => number;
 }
 
 const loadBestScore = () => {
@@ -119,6 +126,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   worldZ: 0,
   chunks: [],
   collectedCoinIds: new Set(),
+  collectedPowerupIds: new Set(),
   chunkCounter: 0,
 
   missions: initialMissions(),
@@ -130,6 +138,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   activePowerups: new Map(),
   isJetpackActive: false,
+  isGameOverPending: false,
+  crashVersion: 0,
 
   startGame: () => {
     resetRuntime();
@@ -148,6 +158,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       worldZ: 0,
       chunks: [],
       collectedCoinIds: new Set(),
+      collectedPowerupIds: new Set(),
       chunkCounter: 0,
       missions: initialMissions(),
       jumpCount: 0,
@@ -156,6 +167,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       isWarning: false,
       activePowerups: new Map(),
       isJetpackActive: false,
+      isGameOverPending: false,
+      crashVersion: 0,
     });
   },
 
@@ -167,7 +180,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const finalScore = Math.max(score, Math.floor(runtime.score));
     const newBest = Math.max(finalScore, bestScore);
     if (newBest > bestScore) saveBestScore(newBest);
-    set({ gameState: 'gameover', score: finalScore, bestScore: newBest, worldZ: worldZRef.current });
+    set({
+      gameState: 'gameover',
+      score: finalScore,
+      bestScore: newBest,
+      worldZ: worldZRef.current,
+      isGameOverPending: false,
+      isJetpackActive: false,
+      activePowerups: new Map(),
+      playerAction: 'hit',
+    });
   },
 
   restartGame: () => get().startGame(),
@@ -179,8 +201,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setSliding: (v) => set({ isSliding: v }),
 
   tick: (delta: number) => {
-    const { gameState, activePowerups } = get();
-    if (gameState !== 'playing') return;
+    const { gameState, activePowerups, isGameOverPending } = get();
+    if (gameState !== 'playing' || isGameOverPending) return;
 
     // Update quality manager
     qualityManager.trackFrame();
@@ -197,16 +219,24 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }
     });
 
+    const wasJetpackActive = get().isJetpackActive;
     const isJetpackActive = nextPowerups.has('jetpack');
-    if (isJetpackActive !== get().isJetpackActive) {
+    if (isJetpackActive !== wasJetpackActive) {
       powerupsChanged = true;
     }
 
     const speedForFrame = runtime.speed;
     runtime.speed = Math.min(runtime.speed + SPEED_INCREMENT_PER_SEC * delta, MAX_SPEED);
     runtime.distance += speedForFrame * delta;
-    runtime.score += SCORE_PER_SECOND * speedForFrame * delta;
+    const scoreMultiplier = nextPowerups.has('multiplier') ? 2 : 1;
+    runtime.score += SCORE_PER_SECOND * speedForFrame * delta * scoreMultiplier;
     worldZRef.current += speedForFrame * delta;
+
+    if (isJetpackActive && get().playerAction !== 'fly') {
+      set({ playerAction: 'fly' });
+    } else if (!isJetpackActive && wasJetpackActive && get().playerAction === 'fly') {
+      set({ playerAction: 'run' });
+    }
 
     const now = performance.now();
     if (now - runtime.lastUiSync > 90 || powerupsChanged) {
@@ -249,6 +279,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
   },
 
+  collectPowerup: (id, type) => {
+    const { collectedPowerupIds } = get();
+    if (collectedPowerupIds.has(id)) return;
+
+    const newIds = new Set(collectedPowerupIds);
+    newIds.add(id);
+    set({ collectedPowerupIds: newIds });
+    get().activatePowerup(type);
+  },
+
   incrementJump: () => {
     const { jumpCount, missions } = get();
     set({
@@ -281,7 +321,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   resetChaseMeter: () => set(s => ({ chaseMeter: Math.max(0, s.chaseMeter - 20) })),
 
   activatePowerup: (type: PowerupType) => {
-    const { activePowerups } = get();
+    const { activePowerups, isGameOverPending } = get();
+    if (isGameOverPending) return;
     const nextPowerups = new Map(activePowerups);
     
     let duration = 10;
@@ -294,8 +335,25 @@ export const useGameStore = create<GameStore>((set, get) => ({
     
     set({ 
       activePowerups: nextPowerups,
-      isJetpackActive: nextPowerups.has('jetpack')
+      isJetpackActive: nextPowerups.has('jetpack'),
+      playerAction: type === 'jetpack' ? 'fly' : get().playerAction,
     });
-  }
-}));
+  },
 
+  beginCrash: () => {
+    const current = get();
+    if (current.isGameOverPending || current.gameState !== 'playing') return current.crashVersion;
+
+    const crashVersion = current.crashVersion + 1;
+    set({
+      isGameOverPending: true,
+      crashVersion,
+      playerAction: 'hit',
+      isJumping: false,
+      isSliding: false,
+      activePowerups: new Map(),
+      isJetpackActive: false,
+    });
+    return crashVersion;
+  },
+}));

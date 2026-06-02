@@ -184,7 +184,7 @@ export default function Environment() {
     const lampFinal = new THREE.BoxGeometry(0.6, 0.15, 0.3);
     lampFinal.translate(0.3, 4.5, 0);
     
-    return mergeBufferGeometries([poleFinal, lampFinal]);
+    return mergeBufferGeometries([poleFinal, lampFinal]) ?? poleFinal;
   }, []);
   const streetlightMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#444', roughness: 0.5 }), []);
   const streetlightMatrices = useMemo(() => envProps.filter(p => p.type === 'streetlight').map(p => {
@@ -208,7 +208,7 @@ export default function Environment() {
     seat.translate(0, 0.45, 0);
     const back = new THREE.BoxGeometry(1.2, 0.5, 0.1);
     back.translate(0, 0.7, -0.25);
-    return mergeBufferGeometries([seat, back]);
+    return mergeBufferGeometries([seat, back]) ?? seat;
   }, []);
   const benchMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#5d4037', roughness: 0.9 }), []);
   const benchMatrices = useMemo(() => envProps.filter(p => p.type === 'bench').map(p => {
@@ -239,5 +239,4 @@ export default function Environment() {
     </>
   );
 }
-
 

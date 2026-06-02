@@ -9,28 +9,28 @@ export default function MobileControls() {
 
   const actions = {
     moveLeft: () => {
-      const { gameState, targetLane } = useGameStore.getState();
-      if (gameState !== 'playing') return;
+      const { gameState, targetLane, isGameOverPending } = useGameStore.getState();
+      if (gameState !== 'playing' || isGameOverPending) return;
       const n = Math.max(-1, targetLane - 1) as Lane;
       if (n !== targetLane) { useGameStore.getState().setTargetLane(n); soundManager.playLaneSwitch(); }
     },
     moveRight: () => {
-      const { gameState, targetLane } = useGameStore.getState();
-      if (gameState !== 'playing') return;
+      const { gameState, targetLane, isGameOverPending } = useGameStore.getState();
+      if (gameState !== 'playing' || isGameOverPending) return;
       const n = Math.min(1, targetLane + 1) as Lane;
       if (n !== targetLane) { useGameStore.getState().setTargetLane(n); soundManager.playLaneSwitch(); }
     },
     jump: () => {
-      const { gameState, isJumping } = useGameStore.getState();
-      if (gameState !== 'playing' || isJumping) return;
+      const { gameState, isJumping, isJetpackActive, isGameOverPending } = useGameStore.getState();
+      if (gameState !== 'playing' || isJumping || isJetpackActive || isGameOverPending) return;
       useGameStore.getState().setJumping(true);
       useGameStore.getState().setPlayerAction('jump');
       useGameStore.getState().incrementJump();
       soundManager.playJump();
     },
     slide: () => {
-      const { gameState, isJumping, isSliding } = useGameStore.getState();
-      if (gameState !== 'playing' || isSliding || isJumping) return;
+      const { gameState, isJumping, isSliding, isJetpackActive, isGameOverPending } = useGameStore.getState();
+      if (gameState !== 'playing' || isSliding || isJumping || isJetpackActive || isGameOverPending) return;
       useGameStore.getState().setSliding(true);
       useGameStore.getState().setPlayerAction('slide');
       useGameStore.getState().incrementSlide();
