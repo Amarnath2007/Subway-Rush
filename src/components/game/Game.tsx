@@ -8,6 +8,7 @@ import { qualityManager } from '../../utils/qualityManager';
 import Player           from './Player';
 import Track            from './Track';
 import Obstacles        from './Obstacles';
+import MovingTrains     from './MovingTrains';
 import Coins            from './Coins';
 import Environment      from './Environment';
 import Powerups         from './Powerups';
@@ -51,6 +52,7 @@ function GameScene() {
       {(isActive || gameState === 'gameover') && (
         <>
           <Suspense fallback={null}><Obstacles /></Suspense>
+          <Suspense fallback={null}><MovingTrains /></Suspense>
           <Suspense fallback={null}><Coins /></Suspense>
           <Suspense fallback={null}><Powerups /></Suspense>
           <PowerupEffects />

@@ -16,12 +16,12 @@ export const GRAVITY = -34;
 export const SLIDE_DURATION = 720;
 
 // Jump input improvements.
-export const JUMP_BUFFER_MS = 120;      // buffer window to queue a jump before landing
-export const COYOTE_TIME_MS = 80;       // grace period after leaving ground (unused for endless runner, kept for future)
-export const LANDING_SQUASH_DURATION = 0.15; // seconds of squash-stretch on landing
-export const LANE_TILT_AMOUNT = 0.08;   // radians of character Z-rotation tilt per lane switch
+export const JUMP_BUFFER_MS = 120;      
+export const COYOTE_TIME_MS = 80;       
+export const LANDING_SQUASH_DURATION = 0.15; 
+export const LANE_TILT_AMOUNT = 0.08;   
 
-// Endless world chunk window. Chunks are fixed to a grid and recycled by index.
+// Endless world chunk window.
 export const CHUNK_LENGTH = 50;
 export const CHUNKS_AHEAD = 6;
 export const CHUNKS_BEHIND = 3;
@@ -29,6 +29,14 @@ export const CHUNKS_BEHIND = 3;
 // Scoring.
 export const COIN_SCORE = 50;
 export const SCORE_PER_SECOND = 1;
+
+// Camera tuning — V3.1 Cinematic Flight
+export const BASE_FOV = 57;
+export const MAX_FOV_SPEED = 72;        
+export const JETPACK_FOV_BOOST = 15;    
+export const CAMERA_JETPACK_PULLBACK = 6.0; 
+export const CAMERA_JETPACK_HEIGHT = 8.5;   
+export const CAMERA_JETPACK_LOOK_DOWN = 6.0; 
 
 // Collider dimensions.
 export const PLAYER_COLLIDER = { hw: 0.45, hh: 1.05, hd: 0.4 };
@@ -47,28 +55,55 @@ export const TARGET_POWERUP_HEIGHT = 1.25;
 export const GROUND_COIN_Y = 0.9;
 
 // Powerup configuration.
-export const POWERUP_SPAWN_CHANCE = 0.12;   // chance per chunk
+export const POWERUP_SPAWN_CHANCE = 0.14;   
 export const POWERUP_MAGNET_DURATION = 10;
 export const POWERUP_SNEAKERS_DURATION = 10;
 export const POWERUP_MULTIPLIER_DURATION = 15;
 export const POWERUP_JETPACK_DURATION = 10;
 export const MAGNET_RADIUS = 6.0;
 export const MAGNET_COLLECT_RADIUS = 1.45;
-export const SNEAKERS_JUMP_MULTIPLIER = 2.0;
-export const JETPACK_HEIGHT = 6.0;
-export const AERIAL_COIN_Y = JETPACK_HEIGHT + 0.75;
+
+export const SNEAKERS_JUMP_MULTIPLIER = 2.3; 
+
+export const JETPACK_HEIGHT = 18.0;            
+export const AERIAL_COIN_Y = JETPACK_HEIGHT + 0.8;
 export const POWERUP_COLLECT_RADIUS = 1.6;
 export const POWERUP_PICKUP_Y = 1.05;
 export const CRASH_GAME_OVER_DELAY_MS = 780;
 
-// Missions.
+// Jetpack timing & Warning System
+export const JETPACK_WARNING_TIME = 2.5; 
+export const JETPACK_COIN_STOP_BEFORE_END = 2.4; 
+export const JETPACK_DESCENT_START_TIME = 1.2;   
+
+// Jetpack landing
+export const JETPACK_LANDING_SPEED = 0.070;       
+export const JETPACK_LANDING_IMMUNITY_HEIGHT = 3.0; 
+
+// Obstacle collision tuning 
+export const OBS_UP_DX = 1.1;       
+export const OBS_UP_PY = 2.1;      
+export const OBS_DOWN_DX = 1.1;     
+export const OBS_TRAIN_DX = 1.45;    
+export const OBS_TRAIN_PY = 4.0;
+export const OBS_TRAIN_DZ_OFFSET = 3.5; 
+export const OBS_Z_MIN = -0.6;      
+export const OBS_Z_MAX = 0.4;       
+
+// Moving trains
+export const MOVING_TRAIN_MIN_SPEED = 10;
+export const MOVING_TRAIN_MAX_SPEED = 20;
+export const MOVING_TRAIN_SPAWN_INTERVAL = 3.5;  
+export const MOVING_TRAIN_MIN_CARS = 1;
+export const MOVING_TRAIN_MAX_CARS = 4;
+export const MOVING_TRAIN_CAR_LENGTH = 8.0;
+
+// Missions
 export const MISSIONS_CONFIG = [
   { id: 'collect_coins', label: 'Pick up 100 coins', icon: 'coin', target: 100 },
   { id: 'jump_times', label: 'Jump 20 times', icon: 'jump', target: 20 },
   { id: 'slide_times', label: 'Roll 10 times', icon: 'slide', target: 10 },
 ];
-
-// --- V3: Progression & Shop ---
 
 export type Rarity = 'Common' | 'Rare' | 'Epic' | 'Legendary';
 
@@ -79,34 +114,21 @@ export interface CharacterConfig {
   costCoins: number;
   costDiamonds: number;
   modelPath: string;
+  yOffset?: number;        
+  scaleOverride?: number;  
 }
 
 export const CHARACTERS: CharacterConfig[] = [
-  { id: 'AJ', name: 'AJ', rarity: 'Common', costCoins: 0, costDiamonds: 0, modelPath: '/assets/runner/runner/characters/Aj.fbx' },
-  { id: 'Amy', name: 'Amy', rarity: 'Rare', costCoins: 2000, costDiamonds: 20, modelPath: '/assets/runner/runner/characters/Amy.fbx' },
-  { id: 'Claire', name: 'Claire', rarity: 'Epic', costCoins: 4000, costDiamonds: 40, modelPath: '/assets/runner/runner/characters/claire.fbx' },
-  { id: 'Mousey', name: 'Mousey', rarity: 'Epic', costCoins: 7000, costDiamonds: 70, modelPath: '/assets/runner/runner/characters/mousey.fbx' },
-  { id: 'Knight', name: 'Knight', rarity: 'Legendary', costCoins: 10000, costDiamonds: 100, modelPath: '/assets/runner/runner/characters/Knight.fbx' },
+  { id: 'AJ', name: 'AJ', rarity: 'Common', costCoins: 0, costDiamonds: 0, modelPath: '/assets/runner/runner/characters/Aj.fbx', scaleOverride: 1.0, yOffset: 0.05 },
+  { id: 'Amy', name: 'Amy', rarity: 'Rare', costCoins: 2000, costDiamonds: 20, modelPath: '/assets/runner/runner/characters/Amy.fbx', scaleOverride: 1.0, yOffset: 0.05 },
+  { id: 'Claire', name: 'Claire', rarity: 'Epic', costCoins: 4000, costDiamonds: 40, modelPath: '/assets/runner/runner/characters/claire.fbx', scaleOverride: 1.0, yOffset: 0.05 },
+  { id: 'Mousey', name: 'Mousey', rarity: 'Epic', costCoins: 7000, costDiamonds: 70, modelPath: '/assets/runner/runner/characters/mousey.fbx', scaleOverride: 0.80, yOffset: 0.08 },
+  { id: 'Knight', name: 'Knight', rarity: 'Legendary', costCoins: 10000, costDiamonds: 100, modelPath: '/assets/runner/runner/characters/Knight.fbx', scaleOverride: 1.0, yOffset: 0.18 },
+  { id: 'Ninja', name: 'Ninja', rarity: 'Legendary', costCoins: 10000, costDiamonds: 100, modelPath: '/assets/runner/runner/characters/Ninja.fbx', scaleOverride: 1.0, yOffset: 0.32 },
 ];
 
-export const RARITY_COLORS: Record<Rarity, string> = {
-  Common: '#b0b0b0',
-  Rare: '#4CAF50',
-  Epic: '#9C27B0',
-  Legendary: '#FF9800',
-};
-
-export const POWERUP_UPGRADE_COSTS = [0, 500, 1000, 2000, 4000]; // level 1 is free, index 1 is for level 2
-export const POWERUP_DURATIONS = [8, 10, 12, 14, 16]; // indices 0 to 4 represent levels 1 to 5
-
-export interface Achievement {
-  id: string;
-  title: string;
-  description: string;
-  target: number;
-  reward: number;
-  type: 'coins' | 'distance' | 'jumps' | 'slides' | 'powerups' | 'games';
-}
+export const POWERUP_UPGRADE_COSTS = [0, 500, 1000, 2000, 4000];
+export const POWERUP_DURATIONS = [8, 10, 12, 14, 16];
 
 export const ACHIEVEMENTS: Achievement[] = [
   { id: 'coins_100', title: 'Coin Collector I', description: 'Collect 100 coins', target: 100, reward: 5, type: 'coins' },
@@ -122,5 +144,21 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'play_50', title: 'Veteran', description: 'Play 50 games', target: 50, reward: 25, type: 'games' },
   { id: 'powerups_20', title: 'Power User', description: 'Collect 20 powerups', target: 20, reward: 20, type: 'powerups' },
 ];
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  target: number;
+  reward: number;
+  type: 'coins' | 'distance' | 'jumps' | 'slides' | 'powerups' | 'games';
+}
+
+export const RARITY_COLORS: Record<Rarity, string> = {
+  Common: '#b0b0b0',
+  Rare: '#4CAF50',
+  Epic: '#9C27B0',
+  Legendary: '#FF9800',
+};
 
 export const REVIVE_COST = 5;

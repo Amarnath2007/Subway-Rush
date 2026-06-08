@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGameStore, worldZRef } from '../../store/gameStore';
 import { generateChunk } from '../../utils/chunkGenerator';
-import { CHUNK_LENGTH, CHUNKS_AHEAD, CHUNKS_BEHIND } from '../../config/constants';
+import { CHUNK_LENGTH, CHUNKS_AHEAD, CHUNKS_BEHIND, JETPACK_COIN_STOP_BEFORE_END } from '../../config/constants';
 import { ChunkData } from '../../types/game';
 import { qualityManager } from '../../utils/qualityManager';
 
@@ -20,10 +20,17 @@ function buildChunk(index: number): ChunkData {
   const difficulty = Math.min(progressionIndex / 32, 1);
   const envDensity = qualityManager.settings.envDensity;
   
+  const state = useGameStore.getState();
+  const jetpackPower = state.activePowerups.get('jetpack');
+  
+  // Stop spawning sky coins slightly before the descent starts for a cleaner visual flow
+  const isJetpackActive = state.isJetpackActive && jetpackPower != null && jetpackPower.remaining > JETPACK_COIN_STOP_BEFORE_END;
+  
   return generateChunk(index, chunkZ, {
     difficulty,
     safe: index < 0,
     envDensity,
+    isJetpackActive,
   });
 }
 
@@ -79,14 +86,14 @@ export default function WorldManager() {
     const state = useGameStore.getState();
     if (state.gameState !== 'playing') return;
 
-    const clampedDelta = Math.min(delta, 0.05);
+    // Smoother tick clamping
+    const clampedDelta = Math.min(delta, 0.04);
     state.tick(clampedDelta);
 
     const worldZ = worldZRef.current;
     const centerIndex = getChunkIndexForWorld(worldZ);
     const currentTier = qualityManager.tier;
     
-    // Resync if index changed OR if quality tier changed (necessitates density/count update)
     if (
       lastCenterIndexRef.current !== centerIndex || 
       state.chunks.length === 0 ||
@@ -112,4 +119,3 @@ export default function WorldManager() {
 
   return null;
 }
-

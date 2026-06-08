@@ -10,6 +10,8 @@ interface Cfg {
   difficulty?: number;
   safe?: boolean;
   envDensity?: number;
+  isJetpackActive?: boolean;
+  jetpackTimeRemaining?: number;
 }
 
 function randomLane(): Lane {
@@ -25,252 +27,177 @@ function shuffle<T>(items: T[]): T[] {
   return copy;
 }
 
-function coinLine(lane: Lane, startZ: number, count: number, spacing = 2.4): CoinData[] {
+// ─── Organized Sky Coin Trails V3.1 ─────────────────────────────────────
+
+function aerialStraightPath(lane: Lane, startZ: number, count: number): CoinData[] {
   return Array.from({ length: count }, (_, i) => ({
     id: uid(),
     lane,
-    z: startZ - i * spacing,
+    z: startZ - i * 2.2,
     collected: false,
-    kind: 'ground',
-    y: GROUND_COIN_Y,
+    kind: 'aerial' as const,
+    y: AERIAL_COIN_Y,
   }));
 }
 
-function coinSweep(startZ: number): CoinData[] {
-  const pattern: Lane[] = [-1, 0, 1, 0, -1, 0, 1];
-  return pattern.map((lane, i) => ({
-    id: uid(),
-    lane,
-    z: startZ - i * 1.8,
-    collected: false,
-    kind: 'ground',
-    y: GROUND_COIN_Y,
-  }));
-}
-
-function aerialLaneLine(lane: Lane, startZ: number, count: number): CoinData[] {
-  return Array.from({ length: count }, (_, i) => ({
-    id: uid(),
-    lane,
-    z: startZ - i * 1.65,
-    collected: false,
-    kind: 'aerial',
-    y: AERIAL_COIN_Y + Math.sin(i * 0.55) * 0.18,
-  }));
-}
-
-function aerialCurve(startZ: number, count: number): CoinData[] {
+function aerialCurvedPath(startLane: Lane, endLane: Lane, startZ: number, count: number): CoinData[] {
   return Array.from({ length: count }, (_, i) => {
-    const t = count <= 1 ? 0 : i / (count - 1);
+    const t = i / (count - 1);
+    const xOffset = (endLane - startLane) * 3.0 * t + (startLane * 3.0);
     return {
       id: uid(),
-      lane: 0,
-      z: startZ - i * 1.55,
+      lane: 0 as Lane,
+      z: startZ - i * 2.2,
       collected: false,
-      kind: 'aerial',
-      y: AERIAL_COIN_Y + Math.sin(t * Math.PI * 2) * 0.55,
-      xOffset: Math.sin(t * Math.PI * 2) * 2.8,
+      kind: 'aerial' as const,
+      y: AERIAL_COIN_Y + Math.sin(t * Math.PI) * 1.5, // Arch effect
+      xOffset,
     };
   });
 }
 
+function aerialDoubleWave(startZ: number, count: number): CoinData[] {
+  return Array.from({ length: count }, (_, i) => {
+    const t = i / (count - 1);
+    const sin = Math.sin(t * Math.PI * 2);
+    return {
+      id: uid(),
+      lane: 0 as Lane,
+      z: startZ - i * 2.0,
+      collected: false,
+      kind: 'aerial' as const,
+      y: AERIAL_COIN_Y + sin * 1.2,
+      xOffset: sin * 2.8,
+    };
+  });
+}
+
+function aerialDiamondFormation(startZ: number): CoinData[] {
+  const coins: CoinData[] = [];
+  const spacing = 1.8;
+  const positions = [
+    { l: 0, z: 0, y: 0 },
+    { l: -1, z: spacing, y: 1 },
+    { l: 1, z: spacing, y: 1 },
+    { l: 0, z: spacing * 2, y: 2 },
+    { l: -1, z: spacing * 3, y: 1 },
+    { l: 1, z: spacing * 3, y: 1 },
+    { l:0, z: spacing * 4, y: 0 }
+  ];
+  positions.forEach(p => {
+    coins.push({
+      id: uid(),
+      lane: p.l as Lane,
+      z: startZ - p.z,
+      collected: false,
+      kind: 'aerial' as const,
+      y: AERIAL_COIN_Y + p.y * 0.5,
+    });
+  });
+  return coins;
+}
+
 function generateAerialCoins(index: number, chunkZ: number): CoinData[] {
   if (index < 8) return [];
+  const entryZ = chunkZ - 5;
+  const pattern = index % 5;
 
-  const leadZ = chunkZ - CHUNK_LENGTH * 0.16;
-  const pattern = index % 4;
-
-  if (pattern === 0) {
-    return [
-      ...aerialLaneLine(-1, leadZ, 10),
-      ...aerialLaneLine(0, leadZ - 0.55, 10),
-      ...aerialLaneLine(1, leadZ - 1.1, 10),
-    ];
+  switch (pattern) {
+    case 0: return aerialStraightPath(0, entryZ, 12);
+    case 1: return aerialCurvedPath(-1, 1, entryZ, 14);
+    case 2: return [...aerialStraightPath(-1, entryZ, 8), ...aerialStraightPath(1, entryZ + 8, 8)];
+    case 3: return aerialDoubleWave(entryZ, 16);
+    case 4: return aerialDiamondFormation(entryZ);
+    default: return aerialStraightPath(0, entryZ, 10);
   }
-
-  if (pattern === 1) {
-    return [
-      ...aerialCurve(leadZ, 22),
-      ...aerialLaneLine(randomLane(), leadZ - 24, 9),
-    ];
-  }
-
-  if (pattern === 2) {
-    return [
-      ...aerialLaneLine(-1, leadZ, 8),
-      ...aerialCurve(leadZ - 10, 18),
-      ...aerialLaneLine(1, leadZ - 31, 8),
-    ];
-  }
-
-  return [
-    ...aerialLaneLine(-1, leadZ, 7),
-    ...aerialLaneLine(0, leadZ - 9, 7),
-    ...aerialLaneLine(1, leadZ - 18, 7),
-    ...aerialCurve(leadZ - 28, 12),
-  ];
 }
 
 function generateObstacles(index: number, chunkZ: number, difficulty: number): ObstacleData[] {
   if (index < 3) return [];
-
   const obstacles: ObstacleData[] = [];
-  const maxObs = Math.min(1 + Math.floor(difficulty * 2.6), 3);
-  const slots = [0.24, 0.52, 0.8].slice(0, maxObs);
+  const maxObs = Math.min(1 + Math.floor(difficulty * 2.8), 3);
+  const slots = [0.25, 0.55, 0.85].slice(0, maxObs);
 
   for (const frac of slots) {
     const z = chunkZ - frac * CHUNK_LENGTH;
     const roll = Math.random();
     const lane = randomLane();
-
-    if (roll < 0.28) {
-      obstacles.push({
-        id: uid(),
-        lane,
-        z,
-        type: 'train',
-        trainVariant: Math.random() < 0.5 ? 'train1' : 'train2',
-      });
-    } else if (roll < 0.62) {
-      obstacles.push({ id: uid(), lane, z, type: 'up' });
+    if (roll < 0.35) {
+      obstacles.push({ id: uid(), lane, z, type: 'train' }); // Train (increased from 0.25)
     } else {
-      obstacles.push({ id: uid(), lane, z, type: 'down' });
+      obstacles.push({ id: uid(), lane, z, type: 'up' }); // Hurdle (now 0.35-1.0, removed down obstacles)
     }
   }
-
   return obstacles;
 }
 
-function generateCoins(index: number, chunkZ: number): CoinData[] {
-  if (index < 3) return coinLine(0, chunkZ - 8, 5);
+function generateCoins(index: number, chunkZ: number, isJetpackActive?: boolean): CoinData[] {
+  const aerial = generateAerialCoins(index, chunkZ);
+  if (isJetpackActive) return aerial;
 
-  const aerialCoins = generateAerialCoins(index, chunkZ);
+  if (index < 3) return Array.from({length: 5}, (_, i) => ({
+      id: uid(), lane: 0, z: chunkZ - 8 - i*2.4, collected: false, kind: 'ground', y: GROUND_COIN_Y
+  }));
 
   const pattern = Math.random();
-  let groundCoins: CoinData[];
-  if (pattern < 0.35) {
-    groundCoins = coinLine(randomLane(), chunkZ - CHUNK_LENGTH * 0.55, 6);
-  } else if (pattern < 0.6) {
-    groundCoins = coinSweep(chunkZ - CHUNK_LENGTH * 0.45);
-  } else if (pattern < 0.8) {
-    const [laneA, laneB] = shuffle(LANES).slice(0, 2) as [Lane, Lane];
-    groundCoins = [
-      ...coinLine(laneA, chunkZ - CHUNK_LENGTH * 0.3, 3),
-      ...coinLine(laneB, chunkZ - CHUNK_LENGTH * 0.6, 3),
-    ];
-  } else {
-    groundCoins = coinLine(randomLane(), chunkZ - CHUNK_LENGTH * 0.65, 8);
-  }
+  let ground: CoinData[] = [];
+  const zBase = chunkZ - CHUNK_LENGTH * 0.45;
 
-  return [...groundCoins, ...aerialCoins];
+  if (pattern < 0.4) {
+    ground = Array.from({length: 6}, (_, i) => ({
+      id: uid(), lane: randomLane(), z: zBase - i*2.4, collected: false, kind: 'ground', y: GROUND_COIN_Y
+    }));
+  } else if (pattern < 0.7) {
+    const lane = randomLane();
+    ground = Array.from({length: 8}, (_, i) => ({
+        id: uid(), lane, z: zBase - i*2.4, collected: false, kind: 'ground', y: GROUND_COIN_Y
+    }));
+  } else {
+    ground = [-1, 0, 1].map(l => ({
+        id: uid(), lane: l as Lane, z: zBase, collected: false, kind: 'ground', y: GROUND_COIN_Y
+    }));
+  }
+  return [...ground, ...aerial];
 }
 
 function generatePowerups(index: number, chunkZ: number): PowerupData[] {
-  if (index < 10) return []; // No powerups in early game
-
-  if (Math.random() > POWERUP_SPAWN_CHANCE) return [];
-
-  const types: PowerupType[] = ['magnet', 'sneakers', 'multiplier', 'jetpack'];
-  const type = types[Math.floor(Math.random() * types.length)];
-  const lane = randomLane();
-  const z = chunkZ - (0.3 + Math.random() * 0.4) * CHUNK_LENGTH;
-
-  return [{ id: uid(), lane, z, type }];
+  if (index < 12 || Math.random() > POWERUP_SPAWN_CHANCE) return [];
+  const types: PowerupType[] = ['magnet', 'multiplier', 'jetpack'];
+  return [{ id: uid(), lane: randomLane(), z: chunkZ - 0.5*CHUNK_LENGTH, type: types[Math.floor(Math.random()*3)] }];
 }
 
 function generateEnvironmentProps(chunkZ: number, density: number = 1.0): EnvProp[] {
-  const envProps: EnvProp[] = [];
-
+  const env: EnvProp[] = [];
   (['left', 'right'] as const).forEach(side => {
-    // 1. Layer: Fences (essential for V2 look)
-    // Continuous fences along the track
-    if (density > 0.4) {
-      const fenceCount = Math.ceil(CHUNK_LENGTH / 10);
-      for (let i = 0; i < fenceCount; i++) {
-        envProps.push({
-          id: uid(),
-          type: 'fence',
-          x: side === 'left' ? -5.3 : 5.3,
-          z: chunkZ - i * 10 - 5,
-          side
-        });
-      }
+    const xDir = side === 'left' ? -1 : 1;
+    // Fences
+    for (let i = 0; i < 5; i++) env.push({ id: uid(), type: 'fence', x: 5.3 * xDir, z: chunkZ - i*10 - 5, side });
+    // Props
+    const pCount = Math.floor(4 * density);
+    for (let i = 0; i < pCount; i++) {
+        const z = chunkZ - (i/pCount)*CHUNK_LENGTH - Math.random()*5;
+        const r = Math.random();
+        if (r < 0.3) env.push({ id: uid(), type: 'tree', x: (7.2 + Math.random()*2)*xDir, z, side });
+        else if (r < 0.5) env.push({ id: uid(), type: 'streetlight', x: 6.5*xDir, z, side });
+        else if (r < 0.7) env.push({ id: uid(), type: 'bench', x: 7.5*xDir, z, side });
     }
-
-    // 2. Layer: Streetlights & Trees
-    const propCount = Math.floor((3 + Math.random() * 3) * density);
-    for (let i = 0; i < propCount; i++) {
-      const z = chunkZ - (i / propCount) * CHUNK_LENGTH - Math.random() * 5;
-      const roll = Math.random();
-      
-      if (roll < 0.3) {
-        // Tree
-        envProps.push({
-          id: uid(),
-          type: 'tree',
-          x: side === 'left' ? -7.2 - Math.random() * 2 : 7.2 + Math.random() * 2,
-          z,
-          side
-        });
-      } else if (roll < 0.5) {
-        // Streetlight
-        envProps.push({
-          id: uid(),
-          type: 'streetlight',
-          x: side === 'left' ? -6.5 : 6.5,
-          z,
-          side
-        });
-      } else if (roll < 0.7) {
-        // Small props
-        const type = Math.random() > 0.5 ? 'bench' : 'trashbin';
-        envProps.push({
-          id: uid(),
-          type,
-          x: side === 'left' ? -7.0 - Math.random() * 1.5 : 7.0 + Math.random() * 1.5,
-          z,
-          side
-        });
-      }
-    }
-
-    // 3. Layer: Buildings
-    const buildingCount = Math.ceil((2 + Math.random() * 2) * density);
-    for (let i = 0; i < buildingCount; i++) {
-      const z = chunkZ - (i / buildingCount) * CHUNK_LENGTH - Math.random() * 10;
-      const x = side === 'left' ? -14 - Math.random() * 8 : 14 + Math.random() * 8;
-      const type = Math.random() > 0.5 ? 'building1' : 'building2';
-      envProps.push({ id: uid(), type, x, z, side });
-    }
-
-    // 4. Layer: Grass strips
-    if (density > 0.5) {
-      envProps.push({
-        id: uid(),
-        type: 'grass',
-        x: side === 'left' ? -6.0 : 6.0,
-        z: chunkZ - CHUNK_LENGTH / 2,
-        side
-      });
+    // Buildings
+    const bCount = Math.ceil(2 * density);
+    for (let i = 0; i < bCount; i++) {
+        env.push({ id: uid(), type: Math.random() > 0.5 ? 'building1' : 'building2', x: (15 + Math.random()*10)*xDir, z: chunkZ - (i/bCount)*CHUNK_LENGTH, side });
     }
   });
-
-  return envProps;
+  return env;
 }
 
 export function generateChunk(index: number, chunkZ: number, cfg: Cfg = {}): ChunkData {
-  const gameplayIndex = Math.max(0, index);
-  const difficulty = cfg.difficulty ?? 0;
-  const safe = cfg.safe ?? false;
-  const envDensity = cfg.envDensity ?? 1.0;
-
   return {
     id: uid(),
     index,
     z: chunkZ,
-    obstacles: safe ? [] : generateObstacles(gameplayIndex, chunkZ, difficulty),
-    coins: safe ? [] : generateCoins(gameplayIndex, chunkZ),
-    powerups: safe ? [] : generatePowerups(gameplayIndex, chunkZ),
-    envProps: generateEnvironmentProps(chunkZ, envDensity),
+    obstacles: cfg.safe ? [] : generateObstacles(index, chunkZ, cfg.difficulty ?? 0),
+    coins: cfg.safe ? [] : generateCoins(index, chunkZ, cfg.isJetpackActive),
+    powerups: cfg.safe ? [] : generatePowerups(index, chunkZ),
+    envProps: generateEnvironmentProps(chunkZ, cfg.envDensity ?? 1.0),
   };
 }

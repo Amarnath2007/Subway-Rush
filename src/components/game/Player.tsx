@@ -9,7 +9,6 @@ import {
   CRASH_GAME_OVER_DELAY_MS,
   GROUND_COIN_Y,
   TARGET_PLAYER_HEIGHT,
-  LANE_TILT_AMOUNT,
   LANDING_SQUASH_DURATION,
   SNEAKERS_JUMP_MULTIPLIER,
   JETPACK_HEIGHT,
@@ -17,12 +16,22 @@ import {
   POWERUP_PICKUP_Y,
   MAGNET_COLLECT_RADIUS,
   MAGNET_RADIUS,
-  CHARACTERS
+  CHARACTERS,
+  JETPACK_LANDING_SPEED,
+  JETPACK_LANDING_IMMUNITY_HEIGHT,
+  JETPACK_DESCENT_START_TIME,
+  OBS_UP_DX,
+  OBS_UP_PY,
+  OBS_DOWN_DX,
+  OBS_TRAIN_DX,
+  OBS_TRAIN_PY,
+  OBS_Z_MIN,
+  OBS_Z_MAX,
 } from '../../config/constants';
 import { soundManager } from '../../utils/soundManager';
 import { applyMeshRenderOptions, computeNormalizedTransform } from '../../utils/normalizeModel';
+import { SkeletonUtils } from 'three-stdlib';
 
-// ─── Error boundary for FBX loads ─────────────────────────────────────────
 interface EBState { hasError: boolean }
 class ModelErrorBoundary extends Component<{ children: ReactNode; fallback: ReactNode }, EBState> {
   state: EBState = { hasError: false };
@@ -30,7 +39,6 @@ class ModelErrorBoundary extends Component<{ children: ReactNode; fallback: Reac
   render() { return this.state.hasError ? this.props.fallback : this.props.children; }
 }
 
-// ─── High-quality fallback character ──────────────────────────────────────
 function FallbackCharacter({ isSliding }: { isSliding: boolean }) {
   return (
     <group rotation={[0, Math.PI, 0]}>
@@ -38,325 +46,206 @@ function FallbackCharacter({ isSliding }: { isSliding: boolean }) {
         <capsuleGeometry args={[0.28, isSliding ? 0.65 : 1.25, 8, 12]} />
         <meshStandardMaterial color="#ffcc33" roughness={0.45} />
       </mesh>
-      <mesh position={[0, isSliding ? 1.05 : 1.95, 0]}>
-        <sphereGeometry args={[0.24, 16, 12]} />
-        <meshStandardMaterial color="#ffe0b2" roughness={0.55} />
-      </mesh>
     </group>
   );
 }
 
-import { SkeletonUtils } from 'three-stdlib';
-
-function getUsableClip(fbx: THREE.Group, name: string): THREE.AnimationClip | null {
-  const source = fbx.animations.find(clip => clip.tracks.length > 0 && clip.duration > 0.01);
-  if (!source) return null;
-
-  const clip = source.clone();
-  clip.name = name;
-  clip.tracks = clip.tracks.map(track => {
-    const isPositionTrack = track.name.endsWith('.position');
-    const isRootTrack = /hips|root/i.test(track.name);
-    if (!isPositionTrack || !isRootTrack) return track;
-
-    const pinned = track.clone();
-    const values = pinned.values as Float32Array | number[];
-    const baseX = values[0] ?? 0;
-    const baseZ = values[2] ?? 0;
-    for (let i = 0; i < values.length; i += 3) {
-      values[i] = baseX;
-      values[i + 2] = baseZ;
+function retargetClip(clip: THREE.AnimationClip, name: string): THREE.AnimationClip {
+  const newClip = clip.clone();
+  newClip.name = name;
+  newClip.tracks.forEach(track => {
+    const parts = track.name.split('.');
+    const boneName = parts[0].split(':').pop() || parts[0];
+    track.name = `${boneName}.${parts[1]}`;
+    if (parts[1] === 'position' && /hips|root/i.test(boneName)) {
+      const v = track.values as Float32Array;
+      const baseX = v[0] ?? 0;
+      const baseZ = v[2] ?? 0;
+      for (let i = 0; i < v.length; i += 3) {
+        v[i] = baseX; v[i + 2] = baseZ;
+      }
     }
-    return pinned;
-  }).filter(track => {
-    const isPositionTrack = track.name.endsWith('.position');
-    const isRootTrack = /hips|root/i.test(track.name);
-    return !isPositionTrack || isRootTrack;
   });
-  return clip;
+  return newClip;
 }
 
-function FBXCharacter({ isSliding, groupRef }: { isSliding: boolean; groupRef: React.RefObject<THREE.Group> }) {
+function FBXCharacter() {
   const selectedId = useGameStore(s => s.selectedCharacter);
   const characterConfig = useMemo(() => 
     CHARACTERS.find((c: any) => c.id === selectedId) || CHARACTERS[0]
   , [selectedId]);
-
-  const base     = useFBX(characterConfig.modelPath);
-  const fbxRun   = useFBX('/assets/runner/runner/Animations/Running.fbx');
-  const fbxJump  = useFBX('/assets/runner/runner/Animations/Running Jump.fbx');
+  const base = useFBX(characterConfig.modelPath);
+  const fbxRun = useFBX('/assets/runner/runner/Animations/Running.fbx');
+  const fbxJump = useFBX('/assets/runner/runner/Animations/Running Jump.fbx');
   const fbxSlide = useFBX('/assets/runner/runner/Animations/Running Slide.fbx');
-  const fbxFly   = useFBX('/assets/runner/runner/Animations/Flying.fbx');
-  const fbxHit   = useFBX('/assets/runner/runner/Animations/Got hit.fbx');
-
+  const fbxFly = useFBX('/assets/runner/runner/Animations/Flying.fbx');
+  const fbxHit = useFBX('/assets/runner/runner/Animations/Got hit.fbx');
   const playerAction = useGameStore(s => s.playerAction);
-  const gameState    = useGameStore(s => s.gameState);
-
+  const gameState = useGameStore(s => s.gameState);
   const model = useMemo(() => {
     const cloned = SkeletonUtils.clone(base) as THREE.Group;
-    const { scale, position } = computeNormalizedTransform(cloned, TARGET_PLAYER_HEIGHT, { centerXZ: true });
+    cloned.traverse(n => { if ((n as any).isBone) n.name = n.name.split(':').pop() || n.name; });
+    const { scale, position } = computeNormalizedTransform(cloned, TARGET_PLAYER_HEIGHT * (characterConfig.scaleOverride ?? 1.0), { centerXZ: true });
     cloned.scale.setScalar(scale);
-    cloned.position.copy(position);
+    cloned.position.set(position.x, position.y + (characterConfig.yOffset ?? 0), position.z);
     applyMeshRenderOptions(cloned, { castShadow: true, receiveShadow: false, frustumCulled: false });
     return cloned;
-  }, [base]);
+  }, [base, characterConfig]);
+  const clips = useMemo(() => [
+    fbxRun, fbxJump, fbxSlide, fbxFly, fbxHit
+  ].map((f, i) => {
+    const names = ['run', 'jump', 'slide', 'fly', 'hit'];
+    const s = f.animations.find(c => c.tracks.length > 0 && c.duration > 0.01);
+    return s ? retargetClip(s, names[i]) : null;
+  }).filter(c => !!c) as THREE.AnimationClip[], [fbxRun, fbxJump, fbxSlide, fbxFly, fbxHit]);
 
-  const allClips = useMemo(() => {
-    return [
-      getUsableClip(fbxRun, 'run'),
-      getUsableClip(fbxJump, 'jump'),
-      getUsableClip(fbxSlide, 'slide'),
-      getUsableClip(fbxFly, 'fly'),
-      getUsableClip(fbxHit, 'hit'),
-      getUsableClip(fbxRun, 'idle'),
-    ].filter((clip): clip is THREE.AnimationClip => Boolean(clip));
-  }, [fbxRun, fbxJump, fbxSlide, fbxFly, fbxHit]);
-
-  const { actions, mixer } = useAnimations(allClips, model);
-  const currentActionName = useRef<string>('');
-
+  const { actions, mixer } = useAnimations(clips, model);
+  const cur = useRef('');
   useEffect(() => {
-    if (!actions || !model) return;
-    
-    let nextActionName = playerAction;
-    if (gameState === 'menu') nextActionName = 'idle';
-
-    if (nextActionName === currentActionName.current) return;
-    
-    const prevAction = actions[currentActionName.current];
-    const nextAction = actions[nextActionName] || actions['run'];
-    
-    if (nextAction) {
-      if (prevAction) prevAction.fadeOut(0.2);
-      nextAction.reset().setEffectiveTimeScale(1).setEffectiveWeight(1).fadeIn(0.2).play();
-      
-      if (nextActionName === 'idle' && gameState === 'menu') {
-        nextAction.setEffectiveTimeScale(0.12);
-      }
-
-      if (nextActionName === 'jump' || nextActionName === 'slide' || nextActionName === 'hit') {
-        nextAction.setLoop(THREE.LoopOnce, 1);
-        nextAction.clampWhenFinished = true;
-      } else {
-        nextAction.setLoop(THREE.LoopRepeat, Infinity);
-      }
-      currentActionName.current = nextActionName;
+    if (!actions) return;
+    const next = gameState === 'menu' ? 'idle' : playerAction;
+    if (next === cur.current) return;
+    const p = actions[cur.current]; const n = actions[next] || actions['run'];
+    if (n) {
+      if (p) p.fadeOut(0.2);
+      n.reset().setEffectiveWeight(1).fadeIn(0.2).play();
+      if (next === 'idle') n.setEffectiveTimeScale(0.12);
+      if (/jump|slide|hit/.test(next)) { n.setLoop(THREE.LoopOnce, 1); n.clampWhenFinished = true; }
+      cur.current = next;
     }
-  }, [playerAction, gameState, actions, model]);
-
+  }, [playerAction, gameState, actions]);
   useEffect(() => {
-    if (!mixer || !actions) return;
-    const onFinished = (e: any) => {
-      if (e.action.getClip().name === 'jump' || e.action.getClip().name === 'slide') {
-        const state = useGameStore.getState();
-        if (!state.isGameOverPending) {
-          useGameStore.getState().setPlayerAction(state.isJetpackActive ? 'fly' : 'run');
-        }
-      }
-    };
-    mixer.addEventListener('finished', onFinished);
-    return () => mixer.removeEventListener('finished', onFinished);
-  }, [mixer, actions]);
-
-  if (!model) return null;
+    if (!mixer) return;
+    const f = (e: any) => { if (/jump|slide/.test(e.action.getClip().name)) {
+      const s = useGameStore.getState(); if (!s.isGameOverPending) s.setPlayerAction(s.isJetpackActive ? 'fly' : 'run');
+    }};
+    mixer.addEventListener('finished', f); return () => mixer.removeEventListener('finished', f);
+  }, [mixer]);
   return <primitive object={model} rotation={[0, Math.PI, 0]} />; 
 }
 
 export default function Player() {
   const groupRef = useRef<THREE.Group>(null!);
-  const characterRef = useRef<THREE.Group>(null!);
-
-  const laneXRef    = useRef(0);
-  const jumpVelRef  = useRef(0);
+  const laneXRef = useRef(0);
+  const jumpVelRef = useRef(0);
   const isJumpPhysicsActive = useRef(false);
   const lastHitTime = useRef(0);
   const wasJetpackActiveRef = useRef(false);
-  
-  // V2: Effects state
+  const isJetpackLanding = useRef(false);
   const landingSquashRef = useRef(0);
-  const lastLaneXRef = useRef(0);
 
   useFrame((_, delta) => {
     if (!groupRef.current) return;
     const state = useGameStore.getState();
-    const isJetpack = state.isJetpackActive;
-    
     if (state.gameState !== 'playing') return;
-
     if (state.isGameOverPending) {
-      groupRef.current.position.x = laneXRef.current;
-      groupRef.current.position.y = jumpYRef.current;
-      groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, 0, 0.18);
-      playerXRef.current = laneXRef.current;
+      groupRef.current.position.set(laneXRef.current, jumpYRef.current, 0);
       return;
     }
 
-    // ── Lane switching ─────────────────────────────
-    const targetX = LANE_POSITIONS[state.targetLane + 1];
-    const lerpT   = 1 - Math.pow(1 - 0.22, delta * 60); 
-    lastLaneXRef.current = laneXRef.current;
-    laneXRef.current += (targetX - laneXRef.current) * lerpT;
-    
-    if (Math.abs(laneXRef.current - targetX) < 0.01 && state.playerLane !== state.targetLane) {
-      useGameStore.getState().setPlayerLane(state.targetLane);
-    }
+    const tX = LANE_POSITIONS[state.targetLane + 1];
+    laneXRef.current = THREE.MathUtils.lerp(laneXRef.current, tX, 1 - Math.pow(1 - 0.18, delta * 60));
+    if (Math.abs(laneXRef.current - tX) < 0.01) state.setPlayerLane(state.targetLane);
 
-    // Lane tilt logic
-    const velX = (laneXRef.current - lastLaneXRef.current) / delta;
-    const targetTilt = -velX * 0.015;
-    groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, targetTilt, 0.15);
-
-    // ── Jump/Jetpack physics ─────────────────────
-    if (isJetpack) {
-      const targetY = JETPACK_HEIGHT;
-      jumpYRef.current += (targetY - jumpYRef.current) * (1 - Math.pow(1 - 0.115, delta * 60));
-      jumpVelRef.current = 0;
-      isJumpPhysicsActive.current = false;
+    if (state.isJetpackActive) {
+      const jet = state.activePowerups.get('jetpack');
+      const time = jet?.remaining ?? 10;
+      let targetY = JETPACK_HEIGHT;
+      if (time < JETPACK_DESCENT_START_TIME) targetY = THREE.MathUtils.lerp(0.1, JETPACK_HEIGHT, time / JETPACK_DESCENT_START_TIME);
+      jumpYRef.current = THREE.MathUtils.lerp(jumpYRef.current, targetY, 0.12);
       wasJetpackActiveRef.current = true;
-      if (state.playerAction !== 'fly') useGameStore.getState().setPlayerAction('fly');
     } else {
-      if (wasJetpackActiveRef.current && jumpYRef.current > 0 && !isJumpPhysicsActive.current) {
-        wasJetpackActiveRef.current = false;
-        isJumpPhysicsActive.current = true;
-        jumpVelRef.current = -3.5;
-        useGameStore.getState().setJumping(true);
-        useGameStore.getState().setPlayerAction('run');
-      } else if (jumpYRef.current <= 0) {
-        wasJetpackActiveRef.current = false;
-      }
-
-      if (state.isJumping && !isJumpPhysicsActive.current) {
-        isJumpPhysicsActive.current = true;
-        const jumpMultiplier = state.activePowerups.has('sneakers') ? SNEAKERS_JUMP_MULTIPLIER : 1.0;
-        jumpVelRef.current = JUMP_FORCE * jumpMultiplier;
-      }
-
-      if (isJumpPhysicsActive.current) {
-        jumpVelRef.current  += GRAVITY * delta;
-        jumpYRef.current    += jumpVelRef.current * delta;
-        if (jumpYRef.current <= 0) {
-          jumpYRef.current           = 0;
-          jumpVelRef.current         = 0;
-          isJumpPhysicsActive.current = false;
-          useGameStore.getState().setJumping(false);
-          if (!state.isSliding) useGameStore.getState().setPlayerAction('run');
-          useGameStore.getState().resetChaseMeter();
-          
-          // Landing squash trigger
-          landingSquashRef.current = 1.0;
+      if (wasJetpackActiveRef.current && jumpYRef.current > 0.1) { wasJetpackActiveRef.current = false; isJetpackLanding.current = true; }
+      if (isJetpackLanding.current) {
+        jumpYRef.current = THREE.MathUtils.lerp(jumpYRef.current, 0, JETPACK_LANDING_SPEED);
+        if (jumpYRef.current < 0.1) { jumpYRef.current = 0; isJetpackLanding.current = false; state.setJumping(false); landingSquashRef.current = 1.0; }
+      } else {
+        if (state.isJumping && !isJumpPhysicsActive.current) {
+          isJumpPhysicsActive.current = true;
+          jumpVelRef.current = JUMP_FORCE * (state.activePowerups.has('sneakers') ? SNEAKERS_JUMP_MULTIPLIER : 1.0);
+        }
+        if (isJumpPhysicsActive.current) {
+          jumpVelRef.current += GRAVITY * delta; jumpYRef.current += jumpVelRef.current * delta;
+          if (jumpYRef.current <= 0) { jumpYRef.current = 0; isJumpPhysicsActive.current = false; state.setJumping(false); landingSquashRef.current = 1.0; }
         }
       }
     }
 
-    // Apply squash and stretch
     if (landingSquashRef.current > 0) {
       landingSquashRef.current -= delta / LANDING_SQUASH_DURATION;
-      const squash = 1.0 + Math.sin(landingSquashRef.current * Math.PI) * 0.2;
-      groupRef.current.scale.set(1.1 - squash * 0.1, squash, 1);
-    } else {
-      groupRef.current.scale.set(1, 1, 1);
-    }
+      const s = 1.0 + Math.sin(landingSquashRef.current * Math.PI) * 0.15;
+      groupRef.current.scale.set(1.1 - s * 0.1, s, 1);
+    } else groupRef.current.scale.set(1, 1, 1);
 
-    if (isJumpPhysicsActive.current) useGameStore.getState().updateChaseMeter(delta);
-
-    groupRef.current.position.x = laneXRef.current;
-    groupRef.current.position.y = jumpYRef.current;
+    groupRef.current.position.set(laneXRef.current, jumpYRef.current, 0);
     playerXRef.current = laneXRef.current;
 
-    // ── Crash shake ─────────────────────────────
-    // ── Collision detection ──────────────────────
+    // --- Collision V3.2: Absolute No-Penetration Logic ---
     const now = performance.now();
-    if (now - lastHitTime.current < 500) return; 
-
+    if (now - lastHitTime.current < 500) return;
+    const isImmune = state.isJetpackActive || (isJetpackLanding.current && jumpYRef.current > JETPACK_LANDING_IMMUNITY_HEIGHT);
     const px = laneXRef.current;
     const py = jumpYRef.current;
-    const isMagnet = state.activePowerups.has('magnet');
 
     for (const chunk of state.chunks) {
-      // Obstacles (skip if jetpack)
-      if (!isJetpack) {
+      if (!isImmune) {
         for (const obs of chunk.obstacles) {
-          const obsWorldZ = obs.z + worldZRef.current;
-          if (obsWorldZ < -1.5 || obsWorldZ > 4) continue; 
+          const relZ = obs.z + worldZRef.current;
+          const dx = Math.abs(px - LANE_POSITIONS[obs.lane + 1]);
 
-          const obsX = LANE_POSITIONS[obs.lane + 1];
-          const dx   = Math.abs(px - obsX);
-
-          if (obs.type === 'up') {
-            if (dx < 1.6 && py < 1.3) { triggerCrash(lastHitTime); return; }
-          } else if (obs.type === 'down') {
-            if (dx < 1.6 && !state.isSliding) { triggerCrash(lastHitTime); return; }
-          } else if (obs.type === 'train') {
-            if (dx < 1.3 && py < 3.8) { triggerCrash(lastHitTime); return; }
+          if (obs.type === 'train') {
+            // Train length is 8.0, origin center.
+            // Front is relZ + 4.0. Player is at 0.
+            // Crash if front touches player (tight safety margin to prevent entry)
+            // AND we haven't passed the back yet
+            if (dx < OBS_TRAIN_DX && py < OBS_TRAIN_PY) {
+              const trainFront = relZ + 4.0;
+              const trainBack = relZ - 4.0;
+              if (trainFront >= -1.2 && trainBack <= 1.0) {
+                triggerCrash(lastHitTime); return;
+              }
+            }
+          } else {
+            // Tight X/Z window for hurdles
+            if (relZ < OBS_Z_MIN || relZ > OBS_Z_MAX) continue;
+            if (obs.type === 'up' && dx < OBS_UP_DX && py < OBS_UP_PY) { triggerCrash(lastHitTime); return; }
           }
         }
       }
-
-      // Coins
+      // Coins & Powerups (standard logic remains)
       for (const coin of chunk.coins) {
         if (state.collectedCoinIds.has(coin.id)) continue;
-        if (coin.kind === 'aerial' && !isJetpack) continue;
-        const coinWorldZ = coin.z + worldZRef.current;
-        if (coinWorldZ < -5 || coinWorldZ > 5) continue;
-        const coinX = LANE_POSITIONS[coin.lane + 1] + (coin.xOffset ?? 0);
-        const coinY = coin.y ?? GROUND_COIN_Y;
-        const dx = Math.abs(px - coinX);
-        const dy = Math.abs(py - coinY);
-        const dz = Math.abs(coinWorldZ);
-
-        const magnetDist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        const magnetSweep = isMagnet && dz < MAGNET_COLLECT_RADIUS && dx < MAGNET_RADIUS && dy < MAGNET_RADIUS;
-        const isCollected = isMagnet
-          ? magnetDist < MAGNET_COLLECT_RADIUS || magnetSweep
-          : dx < COIN_COLLECT_RADIUS && dy < COIN_COLLECT_RADIUS && dz < COIN_COLLECT_RADIUS;
-
-        if (isCollected) {
-          soundManager.playCoin();
-          useGameStore.getState().collectCoin(coin.id);
-        }
+        if (coin.kind === 'aerial' && !state.isJetpackActive) continue;
+        const cz = coin.z + worldZRef.current;
+        if (Math.abs(cz) > 5) continue;
+        const cx = LANE_POSITIONS[coin.lane + 1] + (coin.xOffset ?? 0);
+        const cy = coin.y ?? GROUND_COIN_Y;
+        const dist = Math.sqrt(Math.pow(px - cx, 2) + Math.pow(py - cy, 2) + Math.pow(cz, 2));
+        const mag = state.activePowerups.has('magnet') && Math.abs(cz) < 1.5 && Math.abs(px - cx) < 6 && Math.abs(py - cy) < 6;
+        if (mag || dist < 1.35) { soundManager.playCoin(); state.collectCoin(coin.id); }
       }
-
-      // Powerups
       for (const pw of chunk.powerups) {
         if (state.collectedPowerupIds.has(pw.id)) continue;
-        const pwWorldZ = pw.z + worldZRef.current;
-        if (pwWorldZ < -2 || pwWorldZ > 2) continue;
-        const pwX = LANE_POSITIONS[pw.lane + 1];
-        const pwDy = Math.abs(py - POWERUP_PICKUP_Y);
-        if (
-          Math.abs(px - pwX) < POWERUP_COLLECT_RADIUS &&
-          pwDy < POWERUP_COLLECT_RADIUS &&
-          Math.abs(pwWorldZ) < POWERUP_COLLECT_RADIUS
-        ) {
-          soundManager.playPowerup();
-          useGameStore.getState().collectPowerup(pw.id, pw.type);
+        const pz = pw.z + worldZRef.current;
+        if (Math.abs(pz) < 1.6 && Math.abs(px - LANE_POSITIONS[pw.lane + 1]) < 1.6 && Math.abs(py - 1.05) < 1.6) {
+          soundManager.playPowerup(); state.collectPowerup(pw.id, pw.type);
         }
       }
     }
   });
 
-  const isSliding2 = useGameStore(s => s.isSliding);
-  const gameState  = useGameStore(s => s.gameState);
-
-  if (gameState === 'menu') return null;
-
   return (
-    <group ref={groupRef} position={[LANE_POSITIONS[1], 0, 0]}>
-      <ModelErrorBoundary fallback={<FallbackCharacter isSliding={isSliding2} />}>
-        <FBXCharacter isSliding={isSliding2} groupRef={groupRef} />
+    <group ref={groupRef}>
+      <ModelErrorBoundary fallback={<FallbackCharacter isSliding={useGameStore.getState().isSliding} />}>
+        <FBXCharacter />
       </ModelErrorBoundary>
     </group>
   );
 }
 
 function triggerCrash(lastHitTime: React.MutableRefObject<number>) {
-  lastHitTime.current   = performance.now();
-  const crashVersion = useGameStore.getState().beginCrash();
+  lastHitTime.current = performance.now();
+  const cv = useGameStore.getState().beginCrash();
   soundManager.playGameOver();
-  window.setTimeout(() => {
-    const state = useGameStore.getState();
-    if (state.isGameOverPending && state.crashVersion === crashVersion) {
-      state.endGame();
-    }
-  }, CRASH_GAME_OVER_DELAY_MS);
+  window.setTimeout(() => { if (useGameStore.getState().crashVersion === cv) useGameStore.getState().endGame(); }, CRASH_GAME_OVER_DELAY_MS);
 }

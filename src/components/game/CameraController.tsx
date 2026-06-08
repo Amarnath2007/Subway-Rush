@@ -1,13 +1,22 @@
 import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { INITIAL_SPEED, JETPACK_HEIGHT, MAX_SPEED, LANE_POSITIONS } from '../../config/constants';
+import { 
+  INITIAL_SPEED, 
+  JETPACK_HEIGHT, 
+  MAX_SPEED, 
+  LANE_POSITIONS,
+  BASE_FOV,
+  MAX_FOV_SPEED,
+  JETPACK_FOV_BOOST,
+  CAMERA_JETPACK_PULLBACK,
+  CAMERA_JETPACK_HEIGHT,
+  CAMERA_JETPACK_LOOK_DOWN
+} from '../../config/constants';
 import { useGameStore, jumpYRef } from '../../store/gameStore';
 
 const FOLLOW_OFFSET = new THREE.Vector3(0, 4.15, 8.15);
 const LOOK_OFFSET = new THREE.Vector3(0, 1.25, -3.2);
-const BASE_FOV = 57;
-const MAX_FOV_V2 = 68;
 
 export default function CameraController() {
   const { camera, size } = useThree();
@@ -17,22 +26,24 @@ export default function CameraController() {
   const desiredLook = useRef(new THREE.Vector3());
   const smoothedLaneX = useRef(0);
   const crashShake = useRef(0);
-  const prevGameState = useRef('menu');
   const prevCrashVersion = useRef(0);
 
   useEffect(() => {
     if (camera instanceof THREE.PerspectiveCamera) {
       camera.fov = BASE_FOV;
       camera.near = 0.1;
-      camera.far = 260;
+      camera.far = 320; 
       camera.updateProjectionMatrix();
     }
   }, [camera]);
 
   useFrame(({ clock }, delta) => {
-    const { gameState, targetLane, isWarning, speed, isJetpackActive, crashVersion } = useGameStore.getState();
+    const state = useGameStore.getState();
+    const { gameState, targetLane, isWarning, speed, isJetpackActive, crashVersion } = state;
+    
     const followT = 1 - Math.pow(1 - 0.095, delta * 60);
     const laneT = 1 - Math.pow(1 - 0.18, delta * 60);
+    const speedNorm = (speed - INITIAL_SPEED) / (MAX_SPEED - INITIAL_SPEED);
 
     if (crashVersion !== prevCrashVersion.current) {
       prevCrashVersion.current = crashVersion;
@@ -40,8 +51,11 @@ export default function CameraController() {
     }
 
     if (camera instanceof THREE.PerspectiveCamera) {
-      const fovTarget = THREE.MathUtils.lerp(BASE_FOV, MAX_FOV_V2, (speed - INITIAL_SPEED) / (MAX_SPEED - INITIAL_SPEED));
-      camera.fov = THREE.MathUtils.lerp(camera.fov, fovTarget, 0.05);
+      let fovTarget = THREE.MathUtils.lerp(BASE_FOV, MAX_FOV_SPEED, speedNorm);
+      if (isJetpackActive) {
+        fovTarget += JETPACK_FOV_BOOST;
+      }
+      camera.fov = THREE.MathUtils.lerp(camera.fov, fovTarget, 0.06);
       camera.updateProjectionMatrix();
     }
 
@@ -52,23 +66,32 @@ export default function CameraController() {
 
       const jumpY = jumpYRef.current;
       const aspect = size.width / Math.max(1, size.height);
-      const portraitBias = Math.max(0, 0.9 - aspect);
-      const speedPullback = Math.min(2.5, Math.max(0, speed - INITIAL_SPEED) * 0.12);
+      const portraitBias = Math.max(0, 1.0 - aspect); // Stronger bias for portrait
+      const speedPullback = Math.min(2.5, Math.max(0, speed - INITIAL_SPEED) * 0.15);
+      
       const altitudeT = Math.min(1, jumpY / JETPACK_HEIGHT);
-      const jetpackT = isJetpackActive ? Math.max(0.35, altitudeT) : altitudeT * 0.45;
-      const followY = FOLLOW_OFFSET.y + portraitBias * 1.5 + jetpackT * 1.85;
-      const followZ = FOLLOW_OFFSET.z + speedPullback + portraitBias * 11.5 + jetpackT * 1.15;
-      const lookY = LOOK_OFFSET.y - portraitBias * 0.35 + jetpackT * 1.25;
-      const lookZ = LOOK_OFFSET.z - portraitBias * 0.7 - jetpackT * 0.55;
+      
+      // V3.1 Cinematic Flight: Higher, tilted down, and pulled back
+      const jetpackPullback = altitudeT * CAMERA_JETPACK_PULLBACK;
+      const jetpackHeightAdd = altitudeT * CAMERA_JETPACK_HEIGHT;
+      const jetpackLookDown = altitudeT * CAMERA_JETPACK_LOOK_DOWN;
+
+      const followY = FOLLOW_OFFSET.y + portraitBias * 2.0 + jetpackHeightAdd;
+      const followZ = FOLLOW_OFFSET.z + speedPullback + portraitBias * 12.0 + jetpackPullback;
+      
+      // Look target moves FURTHER AHEAD but also stays LOWER on tracks for the "downward" look
+      const lookY = LOOK_OFFSET.y - portraitBias * 0.5 - jetpackLookDown;
+      const lookZ = LOOK_OFFSET.z - portraitBias * 1.5 - altitudeT * 12.0;
 
       desiredPos.current.set(
-        smoothedLaneX.current * 0.52,
-        followY + jumpY * (isJetpackActive ? 0.46 : 0.22),
+        smoothedLaneX.current * (isJetpackActive ? 0.35 : 0.5), 
+        followY + (isJetpackActive ? jumpY * 0.5 : jumpY * 0.22),
         followZ
       );
+      
       desiredLook.current.set(
-        smoothedLaneX.current * 0.9,
-        lookY + jumpY * (isJetpackActive ? 0.58 : 0.36),
+        smoothedLaneX.current * 0.8,
+        lookY + (isJetpackActive ? jumpY * 0.15 : jumpY * 0.36), // Keep look target closer to ground
         lookZ
       );
 
@@ -85,38 +108,29 @@ export default function CameraController() {
         camera.position.x += Math.sin(clock.elapsedTime * 42) * 0.045;
       }
 
+      // Speed/Flight wobble
+      const wobbleFreq = isJetpackActive ? 15 : 12;
+      const wobbleAmp = isJetpackActive ? 0.04 : 0.02;
+      camera.position.y += Math.sin(clock.elapsedTime * wobbleFreq) * speedNorm * wobbleAmp;
+
       // Lane tilt
       const velX = (smoothedLaneX.current - prevSmoothedX) / delta;
-      const tiltTarget = -velX * 0.006 + (targetLane * -0.02);
+      const tiltTarget = -velX * 0.005 + (targetLane * -0.012);
       camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, tiltTarget, 0.12);
       
       camera.lookAt(currentLook.current);
     } else if (gameState === 'menu') {
       const t = clock.elapsedTime * 0.45;
-      // Elegant slow orbit + breathing
-      const orbitRadius = 6.2;
-      const breathing = Math.sin(clock.elapsedTime * 0.8) * 0.15;
-      
-      camera.position.set(
-        Math.sin(t * 0.4) * (orbitRadius + breathing),
-        3.15 + Math.cos(t * 0.7) * 0.25,
-        Math.cos(t * 0.4) * (orbitRadius + breathing) + 2 // shift forward slightly
-      );
+      const orbitRadius = 6.8;
+      camera.position.set(Math.sin(t * 0.4) * orbitRadius, 3.15, Math.cos(t * 0.4) * orbitRadius + 2);
       camera.rotation.z = Math.sin(t * 0.5) * 0.02;
       camera.lookAt(0, 1.25, 0);
     } else if (gameState === 'gameover') {
       desiredPos.current.set(0, 5.8, 8.8);
       currentPos.current.lerp(desiredPos.current, delta * 2.2);
       camera.position.copy(currentPos.current);
-      camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, 0, delta * 4);
       camera.lookAt(0, 1.1, -1.2);
     }
-
-    if (gameState === 'gameover' && prevGameState.current === 'playing') {
-      crashShake.current = 1.6;
-    }
-
-    prevGameState.current = gameState;
   });
 
   return null;

@@ -23,17 +23,10 @@ function toItem(obs: ObstacleData): InstancedModelItem {
     position: [LANE_POSITIONS[obs.lane + 1], 0, obs.z] as [number, number, number],
   };
 
-  if (obs.type === 'down') {
-    return {
-      ...base,
-      scale: [1.35, 1, 2.8],
-    };
-  }
-
   if (obs.type === 'up') {
     return {
       ...base,
-      scale: [1.1, 1, 1.9],
+      scale: [1.0, 1, 1.5],  // slightly tighter to match collision
     };
   }
   return {
@@ -53,7 +46,6 @@ export default function Obstacles() {
 
   const obstacles = useMemo(() => chunks.flatMap(chunk => chunk.obstacles), [chunks]);
   const upItems = useMemo(() => obstacles.filter(obs => obs.type === 'up').map(toItem), [obstacles]);
-  const downItems = useMemo(() => obstacles.filter(obs => obs.type === 'down').map(toItem), [obstacles]);
   const train1Items = useMemo(
     () => obstacles.filter(obs => obs.type === 'train' && obs.trainVariant !== 'train2').map(toItem),
     [obstacles]
@@ -66,7 +58,6 @@ export default function Obstacles() {
   return (
     <group ref={groupRef}>
       <InstancedModelBatch url={UP_URL} targetHeight={TARGET_UP_OBS_HEIGHT} items={upItems} />
-      <InstancedModelBatch url={DOWN_URL} targetHeight={TARGET_DOWN_OBS_HEIGHT} items={downItems} />
       <InstancedModelBatch url={TRAIN_URL_1} targetHeight={TARGET_TRAIN_HEIGHT} items={train1Items} />
       <InstancedModelBatch url={TRAIN_URL_2} targetHeight={TARGET_TRAIN_HEIGHT} items={train2Items} />
     </group>

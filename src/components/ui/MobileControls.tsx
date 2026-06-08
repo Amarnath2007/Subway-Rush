@@ -74,7 +74,7 @@ export default function MobileControls() {
       {/* Left / Slide / Right */}
       <div style={{ display: 'flex', gap: 52, alignItems: 'center' }}>
         <button onTouchStart={e => { e.preventDefault(); actions.moveLeft(); }} style={btn('⬅️', actions.moveLeft, '100,200,255')}>⬅️</button>
-        <button onTouchStart={e => { e.preventDefault(); actions.slide(); }}    style={btn('⬇️', actions.slide,    '255,150,50')}>⬇️</button>
+        <button onTouchStart={e => { e.preventDefault(); actions.slide(); }} style={btn('⬇️', actions.slide, '255,150,50')}>⬇️</button>
         <button onTouchStart={e => { e.preventDefault(); actions.moveRight(); }} style={btn('➡️', actions.moveRight, '100,200,255')}>➡️</button>
       </div>
     </div>

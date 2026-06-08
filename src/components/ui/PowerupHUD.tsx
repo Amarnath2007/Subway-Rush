@@ -17,7 +17,7 @@ export default function PowerupHUD() {
       zIndex: 100
     }}>
       {Array.from(activePowerups.values()).map(pw => (
-        <div key={pw.type} style={{
+        <div key={pw.type} id={`pw-${pw.type}`} style={{
           background: 'rgba(0, 0, 0, 0.6)',
           borderRadius: '12px',
           padding: '8px 12px',
@@ -72,6 +72,18 @@ export default function PowerupHUD() {
               }} />
             </div>
           </div>
+          {pw.remaining < 2.5 && (
+            <style>{`
+              #pw-${pw.type} {
+                animation: pulse 0.5s infinite alternate;
+                border-color: #ef4444 !important;
+              }
+              @keyframes pulse {
+                from { background: rgba(0, 0, 0, 0.6); }
+                to { background: rgba(239, 68, 68, 0.4); }
+              }
+            `}</style>
+          )}
         </div>
       ))}
 

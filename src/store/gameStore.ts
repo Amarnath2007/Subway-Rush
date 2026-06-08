@@ -31,14 +31,14 @@ const SAVE_KEY = 'subway_rush_v3_save';
 const DEFAULT_SAVE: SaveData = {
   version: 1,
   bestScore: 0,
-  totalCoins: 0,
-  diamonds: 0,
+  totalCoins: 10000,
+  diamonds: 15,
   unlockedCharacters: ['AJ'],
   selectedCharacter: 'AJ',
   powerupLevels: { jetpack: 1, magnet: 1, sneakers: 1, multiplier: 1 },
   claimedAchievements: [],
   stats: {
-    lifetimeCoins: 0,
+    lifetimeCoins: 10000,
     lifetimeDistance: 0,
     lifetimeGamesPlayed: 0,
     lifetimeJumps: 0,
@@ -165,7 +165,7 @@ interface GameStore extends SaveData {
 }
 
 const initialMissions = (): Mission[] =>
-  MISSIONS_CONFIG.map(m => ({ ...m, current: 0 }));
+  (MISSIONS_CONFIG as any[]).map((m: any) => ({ ...m, current: 0 }));
 
 export const useGameStore = create<GameStore>((set, get) => ({
   ...loadSaveData(),
@@ -317,7 +317,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
 
     const wasJetpackActive = get().isJetpackActive;
-    const isJetpackActive = nextPowerups.has('jetpack');
+    const jetpackPower = nextPowerups.get('jetpack');
+    const isJetpackActive = jetpackPower != null;
+    
     if (isJetpackActive !== wasJetpackActive) {
       powerupsChanged = true;
     }
