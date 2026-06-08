@@ -67,3 +67,60 @@ export const MISSIONS_CONFIG = [
   { id: 'jump_times', label: 'Jump 20 times', icon: 'jump', target: 20 },
   { id: 'slide_times', label: 'Roll 10 times', icon: 'slide', target: 10 },
 ];
+
+// --- V3: Progression & Shop ---
+
+export type Rarity = 'Common' | 'Rare' | 'Epic' | 'Legendary';
+
+export interface CharacterConfig {
+  id: string;
+  name: string;
+  rarity: Rarity;
+  costCoins: number;
+  costDiamonds: number;
+  modelPath: string;
+}
+
+export const CHARACTERS: CharacterConfig[] = [
+  { id: 'AJ', name: 'AJ', rarity: 'Common', costCoins: 0, costDiamonds: 0, modelPath: '/assets/runner/runner/characters/Aj.fbx' },
+  { id: 'Amy', name: 'Amy', rarity: 'Rare', costCoins: 2000, costDiamonds: 20, modelPath: '/assets/runner/runner/characters/Amy.fbx' },
+  { id: 'Claire', name: 'Claire', rarity: 'Epic', costCoins: 4000, costDiamonds: 40, modelPath: '/assets/runner/runner/characters/claire.fbx' },
+  { id: 'Mousey', name: 'Mousey', rarity: 'Epic', costCoins: 7000, costDiamonds: 70, modelPath: '/assets/runner/runner/characters/mousey.fbx' },
+  { id: 'Knight', name: 'Knight', rarity: 'Legendary', costCoins: 10000, costDiamonds: 100, modelPath: '/assets/runner/runner/characters/Knight.fbx' },
+];
+
+export const RARITY_COLORS: Record<Rarity, string> = {
+  Common: '#b0b0b0',
+  Rare: '#4CAF50',
+  Epic: '#9C27B0',
+  Legendary: '#FF9800',
+};
+
+export const POWERUP_UPGRADE_COSTS = [0, 500, 1000, 2000, 4000]; // level 1 is free, index 1 is for level 2
+export const POWERUP_DURATIONS = [8, 10, 12, 14, 16]; // indices 0 to 4 represent levels 1 to 5
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  target: number;
+  reward: number;
+  type: 'coins' | 'distance' | 'jumps' | 'slides' | 'powerups' | 'games';
+}
+
+export const ACHIEVEMENTS: Achievement[] = [
+  { id: 'coins_100', title: 'Coin Collector I', description: 'Collect 100 coins', target: 100, reward: 5, type: 'coins' },
+  { id: 'coins_500', title: 'Coin Collector II', description: 'Collect 500 coins', target: 500, reward: 10, type: 'coins' },
+  { id: 'coins_1000', title: 'Coin Collector III', description: 'Collect 1000 coins', target: 1000, reward: 25, type: 'coins' },
+  { id: 'jumps_50', title: 'Leaper I', description: 'Jump 50 times', target: 50, reward: 5, type: 'jumps' },
+  { id: 'jumps_200', title: 'Leaper II', description: 'Jump 200 times', target: 200, reward: 10, type: 'jumps' },
+  { id: 'slides_50', title: 'Slider I', description: 'Slide 50 times', target: 50, reward: 5, type: 'slides' },
+  { id: 'slides_200', title: 'Slider II', description: 'Slide 200 times', target: 200, reward: 10, type: 'slides' },
+  { id: 'dist_1000', title: 'Traveler I', description: 'Travel 1000m', target: 1000, reward: 10, type: 'distance' },
+  { id: 'dist_5000', title: 'Traveler II', description: 'Travel 5000m', target: 5000, reward: 25, type: 'distance' },
+  { id: 'play_10', title: 'Rookie', description: 'Play 10 games', target: 10, reward: 10, type: 'games' },
+  { id: 'play_50', title: 'Veteran', description: 'Play 50 games', target: 50, reward: 25, type: 'games' },
+  { id: 'powerups_20', title: 'Power User', description: 'Collect 20 powerups', target: 20, reward: 20, type: 'powerups' },
+];
+
+export const REVIVE_COST = 5;

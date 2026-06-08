@@ -92,10 +92,18 @@ export default function CameraController() {
       
       camera.lookAt(currentLook.current);
     } else if (gameState === 'menu') {
-      const t = clock.elapsedTime * 0.28;
-      camera.position.set(Math.sin(t) * 7.5, 5.8, Math.cos(t) * 8.5 + 4);
-      camera.rotation.z = 0;
-      camera.lookAt(0, 1.2, -1.8);
+      const t = clock.elapsedTime * 0.45;
+      // Elegant slow orbit + breathing
+      const orbitRadius = 6.2;
+      const breathing = Math.sin(clock.elapsedTime * 0.8) * 0.15;
+      
+      camera.position.set(
+        Math.sin(t * 0.4) * (orbitRadius + breathing),
+        3.15 + Math.cos(t * 0.7) * 0.25,
+        Math.cos(t * 0.4) * (orbitRadius + breathing) + 2 // shift forward slightly
+      );
+      camera.rotation.z = Math.sin(t * 0.5) * 0.02;
+      camera.lookAt(0, 1.25, 0);
     } else if (gameState === 'gameover') {
       desiredPos.current.set(0, 5.8, 8.8);
       currentPos.current.lerp(desiredPos.current, delta * 2.2);

@@ -17,6 +17,7 @@ import {
   POWERUP_PICKUP_Y,
   MAGNET_COLLECT_RADIUS,
   MAGNET_RADIUS,
+  CHARACTERS
 } from '../../config/constants';
 import { soundManager } from '../../utils/soundManager';
 import { applyMeshRenderOptions, computeNormalizedTransform } from '../../utils/normalizeModel';
@@ -47,22 +48,6 @@ function FallbackCharacter({ isSliding }: { isSliding: boolean }) {
 
 import { SkeletonUtils } from 'three-stdlib';
 
-const RUNNER_ASSETS = {
-  base: '/assets/runner/Aj.fbx',
-  run: '/assets/runner/Running.fbx',
-  jump: '/assets/runner/Running Jump.fbx',
-  slide: '/assets/runner/Running Slide.fbx',
-  fly: '/assets/runner/Flying.fbx',
-  hit: '/assets/runner/Got hit.fbx',
-} as const;
-
-useFBX.preload(RUNNER_ASSETS.base);
-useFBX.preload(RUNNER_ASSETS.run);
-useFBX.preload(RUNNER_ASSETS.jump);
-useFBX.preload(RUNNER_ASSETS.slide);
-useFBX.preload(RUNNER_ASSETS.fly);
-useFBX.preload(RUNNER_ASSETS.hit);
-
 function getUsableClip(fbx: THREE.Group, name: string): THREE.AnimationClip | null {
   const source = fbx.animations.find(clip => clip.tracks.length > 0 && clip.duration > 0.01);
   if (!source) return null;
@@ -92,21 +77,27 @@ function getUsableClip(fbx: THREE.Group, name: string): THREE.AnimationClip | nu
 }
 
 function FBXCharacter({ isSliding, groupRef }: { isSliding: boolean; groupRef: React.RefObject<THREE.Group> }) {
-  const base     = useFBX(RUNNER_ASSETS.base);
-  const fbxRun   = useFBX(RUNNER_ASSETS.run);
-  const fbxJump  = useFBX(RUNNER_ASSETS.jump);
-  const fbxSlide = useFBX(RUNNER_ASSETS.slide);
-  const fbxFly   = useFBX(RUNNER_ASSETS.fly);
-  const fbxHit   = useFBX(RUNNER_ASSETS.hit);
+  const selectedId = useGameStore(s => s.selectedCharacter);
+  const characterConfig = useMemo(() => 
+    CHARACTERS.find((c: any) => c.id === selectedId) || CHARACTERS[0]
+  , [selectedId]);
+
+  const base     = useFBX(characterConfig.modelPath);
+  const fbxRun   = useFBX('/assets/runner/runner/Animations/Running.fbx');
+  const fbxJump  = useFBX('/assets/runner/runner/Animations/Running Jump.fbx');
+  const fbxSlide = useFBX('/assets/runner/runner/Animations/Running Slide.fbx');
+  const fbxFly   = useFBX('/assets/runner/runner/Animations/Flying.fbx');
+  const fbxHit   = useFBX('/assets/runner/runner/Animations/Got hit.fbx');
 
   const playerAction = useGameStore(s => s.playerAction);
+  const gameState    = useGameStore(s => s.gameState);
 
   const model = useMemo(() => {
     const cloned = SkeletonUtils.clone(base) as THREE.Group;
     const { scale, position } = computeNormalizedTransform(cloned, TARGET_PLAYER_HEIGHT, { centerXZ: true });
     cloned.scale.setScalar(scale);
     cloned.position.copy(position);
-    applyMeshRenderOptions(cloned, { castShadow: false, receiveShadow: false, frustumCulled: false });
+    applyMeshRenderOptions(cloned, { castShadow: true, receiveShadow: false, frustumCulled: false });
     return cloned;
   }, [base]);
 
@@ -117,6 +108,7 @@ function FBXCharacter({ isSliding, groupRef }: { isSliding: boolean; groupRef: R
       getUsableClip(fbxSlide, 'slide'),
       getUsableClip(fbxFly, 'fly'),
       getUsableClip(fbxHit, 'hit'),
+      getUsableClip(fbxRun, 'idle'),
     ].filter((clip): clip is THREE.AnimationClip => Boolean(clip));
   }, [fbxRun, fbxJump, fbxSlide, fbxFly, fbxHit]);
 
@@ -124,14 +116,24 @@ function FBXCharacter({ isSliding, groupRef }: { isSliding: boolean; groupRef: R
   const currentActionName = useRef<string>('');
 
   useEffect(() => {
-    if (!actions || !actions['run'] || !model) return;
-    const nextActionName = playerAction;
+    if (!actions || !model) return;
+    
+    let nextActionName = playerAction;
+    if (gameState === 'menu') nextActionName = 'idle';
+
     if (nextActionName === currentActionName.current) return;
+    
     const prevAction = actions[currentActionName.current];
     const nextAction = actions[nextActionName] || actions['run'];
+    
     if (nextAction) {
-      if (prevAction) prevAction.fadeOut(0.15);
-      nextAction.reset().setEffectiveTimeScale(1).setEffectiveWeight(1).fadeIn(0.15).play();
+      if (prevAction) prevAction.fadeOut(0.2);
+      nextAction.reset().setEffectiveTimeScale(1).setEffectiveWeight(1).fadeIn(0.2).play();
+      
+      if (nextActionName === 'idle' && gameState === 'menu') {
+        nextAction.setEffectiveTimeScale(0.12);
+      }
+
       if (nextActionName === 'jump' || nextActionName === 'slide' || nextActionName === 'hit') {
         nextAction.setLoop(THREE.LoopOnce, 1);
         nextAction.clampWhenFinished = true;
@@ -140,7 +142,7 @@ function FBXCharacter({ isSliding, groupRef }: { isSliding: boolean; groupRef: R
       }
       currentActionName.current = nextActionName;
     }
-  }, [playerAction, actions, model]);
+  }, [playerAction, gameState, actions, model]);
 
   useEffect(() => {
     if (!mixer || !actions) return;

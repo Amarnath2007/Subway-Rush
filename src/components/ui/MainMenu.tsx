@@ -1,30 +1,33 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { soundManager } from '../../utils/soundManager';
+import BottomMenu from './BottomMenu';
+import AchievementsModal from './AchievementsModal';
+import CharactersModal from './CharactersModal';
+import ShopModal from './ShopModal';
 
 export default function MainMenu() {
-  const bestScore  = useGameStore(s => s.bestScore);
-  const titleRef   = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
+  const { bestScore, totalCoins, diamonds } = useGameStore();
+  const [activeModal, setActiveModal] = useState<'none' | 'achievements' | 'characters' | 'shop'>('none');
+  
+  const titleRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Entrance animation
-    [titleRef, contentRef].forEach((ref, i) => {
-      const el = ref.current;
-      if (!el) return;
-      el.style.opacity = '0';
-      el.style.transform = 'translateY(-24px)';
+    if (titleRef.current) {
+      titleRef.current.style.opacity = '0';
+      titleRef.current.style.transform = 'translateY(-20px)';
       setTimeout(() => {
-        el.style.transition = `all ${0.5 + i * 0.1}s cubic-bezier(0.34,1.56,0.64,1)`;
-        el.style.opacity = '1';
-        el.style.transform = 'translateY(0)';
-      }, 80 + i * 120);
-    });
+        if (!titleRef.current) return;
+        titleRef.current.style.transition = 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        titleRef.current.style.opacity = '1';
+        titleRef.current.style.transform = 'translateY(0)';
+      }, 100);
+    }
   }, []);
 
   const handleStart = () => {
+    if (activeModal !== 'none') return;
     soundManager.unlock();
-    soundManager.playJump();
     soundManager.startBGMusic();
     useGameStore.getState().startGame();
   };
@@ -39,107 +42,108 @@ export default function MainMenu() {
   return (
     <div style={{
       position: 'absolute', inset: 0,
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      background: 'linear-gradient(180deg,rgba(8,16,50,0.88) 0%,rgba(18,8,38,0.92) 100%)',
-      fontFamily: "'Segoe UI', system-ui, sans-serif",
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      fontFamily: "'Inter', system-ui, sans-serif",
       userSelect: 'none',
+      background: 'linear-gradient(180deg, rgba(8,16,50,0.1) 0%, rgba(18,8,38,0.4) 100%)',
     }}>
-      {/* Floating coins background */}
-      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-        {Array.from({ length: 18 }).map((_, i) => (
-          <div key={i} style={{
-            position: 'absolute',
-            fontSize: `${0.8 + Math.random() * 0.8}rem`,
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-            opacity: 0.18 + Math.random() * 0.22,
-            animation: `floatCoin ${3 + Math.random() * 4}s ease-in-out ${Math.random() * 3}s infinite alternate`,
-          }}>🪙</div>
-        ))}
-      </div>
+      {/* Header Info */}
+      <div style={{
+        position: 'absolute', top: '24px', left: '24px', right: '24px',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        zIndex: 10,
+      }}>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={statBadgeStyle}>
+            <span style={{ fontSize: '18px' }}>💰</span>
+            <span style={{ fontWeight: 800 }}>{totalCoins.toLocaleString()}</span>
+          </div>
+          <div style={statBadgeStyle}>
+            <span style={{ fontSize: '18px' }}>💎</span>
+            <span style={{ fontWeight: 800 }}>{diamonds.toLocaleString()}</span>
+          </div>
+        </div>
 
-      {/* Logo */}
-      <div ref={titleRef} style={{ textAlign: 'center', marginBottom: '1.8rem' }}>
-        <div style={{
-          fontSize: 'clamp(2.8rem,9vw,5.5rem)', fontWeight: 900,
-          lineHeight: 1, letterSpacing: -2,
-          filter: 'drop-shadow(0 4px 20px rgba(255,165,0,0.6))',
-          marginBottom: '0.15rem',
-          ...textGrad('#ffd700', '#ff4500'),
-        }}>SUBWAY</div>
-        <div style={{
-          fontSize: 'clamp(2.8rem,9vw,5.5rem)', fontWeight: 900,
-          lineHeight: 1, letterSpacing: -2,
-          filter: 'drop-shadow(0 4px 20px rgba(0,191,255,0.4))',
-          ...textGrad('#00bfff', '#0044ff'),
-        }}>RUSH</div>
-        <div style={{
-          fontSize: 'clamp(0.75rem,2vw,0.95rem)', color: 'rgba(255,255,255,0.45)',
-          letterSpacing: 5, textTransform: 'uppercase', marginTop: 8, fontWeight: 400,
-        }}>Endless Runner</div>
-      </div>
-
-      <div ref={contentRef} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', width: '100%', maxWidth: 360, padding: '0 20px' }}>
-        {/* Best score badge */}
         {bestScore > 0 && (
           <div style={{
-            background: 'rgba(255,215,0,0.12)', border: '1px solid rgba(255,215,0,0.35)',
-            borderRadius: 14, padding: '6px 22px',
-            color: '#ffd700', fontSize: '0.95rem', fontWeight: 700, letterSpacing: 1,
-            display: 'flex', alignItems: 'center', gap: 8,
+             background: 'rgba(255, 215, 0, 0.25)', 
+             backdropFilter: 'blur(10px)',
+             border: '1px solid rgba(255, 215, 0, 0.4)',
+             borderRadius: '16px', padding: '10px 20px',
+             color: '#ffd700', fontSize: '0.9rem', fontWeight: 800,
+             boxShadow: '0 4px 15px rgba(255, 215, 0, 0.2)'
           }}>
-            🏆 BEST: {String(bestScore).padStart(6,'0')}
+            🏆 BEST: {bestScore}
           </div>
         )}
+      </div>
 
-        {/* Start button */}
-        <button onClick={handleStart} style={{
-          width: '100%',
-          background: 'linear-gradient(135deg,#ffd700 0%,#ff8c00 100%)',
-          border: 'none', borderRadius: 50,
-          padding: '1rem 3rem',
-          fontSize: 'clamp(1.05rem,3vw,1.3rem)', fontWeight: 800,
-          color: '#1a0a00', cursor: 'pointer', letterSpacing: 2,
-          textTransform: 'uppercase',
-          boxShadow: '0 8px 30px rgba(255,140,0,0.5)',
-          transition: 'transform 0.12s ease, box-shadow 0.12s ease',
-          animation: 'pulseCTA 2s ease-in-out infinite',
+      {/* Center content (Click anywhere or Start) */}
+      <div 
+        onClick={handleStart}
+        style={{
+          flex: 1, width: '100%', display: 'flex', flexDirection: 'column', 
+          alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
         }}
-        onMouseEnter={e => { (e.target as HTMLElement).style.transform='scale(1.06)'; (e.target as HTMLElement).style.boxShadow='0 12px 40px rgba(255,140,0,0.7)'; }}
-        onMouseLeave={e => { (e.target as HTMLElement).style.transform='scale(1)'; (e.target as HTMLElement).style.boxShadow='0 8px 30px rgba(255,140,0,0.5)'; }}
-        >🏃 START RUNNING</button>
-
-        {/* Controls grid */}
-        <div style={{
-          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem',
-          padding: '1rem', width: '100%',
-          background: 'rgba(255,255,255,0.04)', borderRadius: 18,
-          border: '1px solid rgba(255,255,255,0.08)',
-        }}>
-          {[
-            ['⬅️➡️ A / D','Lane switch'],
-            ['⬆️ Space / W', 'Jump'],
-            ['⬇️ S', 'Slide'],
-            ['👆 Swipe', 'Touch'],
-          ].map(([key, desc]) => (
-            <div key={key} style={{ textAlign: 'center' }}>
-              <div style={{ color: '#ffd700', fontSize: '0.72rem', fontWeight: 600 }}>{key}</div>
-              <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.66rem' }}>{desc}</div>
-            </div>
-          ))}
+      >
+        <div ref={titleRef} style={{ textAlign: 'center', pointerEvents: 'none' }}>
+          <div style={{
+            fontSize: 'clamp(3.5rem, 12vw, 6.5rem)', fontWeight: 900,
+            lineHeight: 0.85, letterSpacing: -3,
+            filter: 'drop-shadow(0 6px 30px rgba(0,0,0,0.4))',
+            ...textGrad('#ffd700', '#ff8c00'),
+          }}>SUBWAY</div>
+          <div style={{
+            fontSize: 'clamp(3.5rem, 12vw, 6.5rem)', fontWeight: 900,
+            lineHeight: 0.85, letterSpacing: -3,
+            filter: 'drop-shadow(0 6px 30px rgba(0,0,0,0.4))',
+            ...textGrad('#00f2fe', '#4facfe'),
+          }}>RUSH</div>
+          
+          <div style={{
+            marginTop: '3.5rem',
+            fontSize: '1.25rem', fontWeight: 800, color: 'white',
+            textTransform: 'uppercase', letterSpacing: '4px',
+            animation: 'blink 1.5s infinite',
+            textShadow: '0 2px 10px rgba(0,0,0,0.5)'
+          }}>
+            TAP TO PLAY
+          </div>
         </div>
       </div>
 
+      {/* Bottom Nav */}
+      <BottomMenu 
+        onOpenAchievements={() => setActiveModal('achievements')}
+        onOpenCharacters={() => setActiveModal('characters')}
+        onOpenShop={() => setActiveModal('shop')}
+      />
+
+      {/* Modals */}
+      {activeModal === 'achievements' && <AchievementsModal onClose={() => setActiveModal('none')} />}
+      {activeModal === 'characters' && <CharactersModal onClose={() => setActiveModal('none')} />}
+      {activeModal === 'shop' && <ShopModal onClose={() => setActiveModal('none')} />}
+
       <style>{`
-        @keyframes floatCoin {
-          from { transform: translateY(0) rotate(0deg); }
-          to   { transform: translateY(-22px) rotate(180deg); }
-        }
-        @keyframes pulseCTA {
-          0%,100% { box-shadow: 0 8px 30px rgba(255,140,0,0.5), 0 0 0 0 rgba(255,140,0,0.4); }
-          50%      { box-shadow: 0 8px 30px rgba(255,140,0,0.5), 0 0 0 10px rgba(255,140,0,0); }
+        @keyframes blink {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(0.95); }
         }
       `}</style>
     </div>
   );
 }
+
+const statBadgeStyle: React.CSSProperties = {
+  background: 'rgba(15, 23, 42, 0.65)',
+  backdropFilter: 'blur(12px)',
+  border: '1px solid rgba(255, 255, 255, 0.1)',
+  borderRadius: '50px',
+  padding: '8px 16px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '10px',
+  color: 'white',
+  fontSize: '0.95rem',
+  boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+};

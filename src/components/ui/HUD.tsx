@@ -38,58 +38,55 @@ export default function HUD() {
         fontFamily: "'Segoe UI', system-ui, sans-serif",
       }}>
 
-        {/* Left: pause + level */}
+        {/* Left: pause */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <button onClick={pauseGame} style={{
             pointerEvents: 'all',
-            width: 48, height: 48, borderRadius: 12,
-            background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)',
-            border: '2px solid rgba(255,255,255,0.25)', color: '#fff',
-            fontSize: '1.2rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'transform 0.1s ease',
+            width: 52, height: 52, borderRadius: '16px',
+            background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)',
+            border: '2px solid rgba(255,255,255,0.2)', color: '#fff',
+            fontSize: '1.4rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 8px 16px rgba(0,0,0,0.3)',
+            transition: 'all 0.15s ease',
           }}>⏸</button>
-          <div style={{
-            background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(6px)',
-            borderRadius: 8, padding: '3px 10px',
-            color: '#ffd700', fontSize: '0.68rem', fontWeight: 800, letterSpacing: 1, textAlign: 'center',
-          }}>LVL {level}</div>
         </div>
 
         {/* Centre: score panel */}
         <div style={{
           textAlign: 'center',
-          background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)',
-          borderRadius: 18, padding: '7px 22px',
-          border: '1px solid rgba(255,255,255,0.12)', minWidth: 150,
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)',
+          borderRadius: '24px', padding: '10px 24px',
+          border: '1px solid rgba(255,255,255,0.15)', minWidth: 160,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          pointerEvents: 'none'
         }}>
-          <div style={{ color: '#ffd700', fontSize: '0.7rem', fontWeight: 800, letterSpacing: 2 }}>
-            ×{level} ⭐
-          </div>
-          {isMultiplierActive && (
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginTop: 4,
-              marginBottom: 3,
-              padding: '2px 9px',
-              borderRadius: 8,
-              background: 'linear-gradient(135deg,#fbbf24,#f97316)',
-              color: '#1a0a00',
-              fontSize: '0.68rem',
-              fontWeight: 900,
-              boxShadow: '0 0 14px rgba(251,191,36,0.58)',
-            }}>
-              x2 SCORE
-            </div>
-          )}
           <div style={{
-            color: '#fff', fontSize: 'clamp(1.5rem, 4vw, 2.1rem)',
+            color: '#fff', fontSize: 'clamp(1.6rem, 5vw, 2.3rem)',
             fontWeight: 900, lineHeight: 1, fontVariantNumeric: 'tabular-nums',
+            letterSpacing: '-1px'
           }}>
             {String(score).padStart(6, '0')}
           </div>
-          <CoinCounter coins={coins} />
+          
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '6px' }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '1.1rem' }}>🪙</span>
+                <span style={{ color: '#ffd700', fontWeight: 800 }}>{coins}</span>
+             </div>
+             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '1.1rem' }}>💎</span>
+                <span style={{ color: '#4facfe', fontWeight: 800 }}>{useGameStore.getState().diamonds}</span>
+             </div>
+          </div>
+
+          {isMultiplierActive && (
+            <div style={{
+              marginTop: '8px', padding: '3px 12px', borderRadius: '10px',
+              background: 'linear-gradient(135deg,#ffd700,#ff8c00)',
+              color: '#000', fontSize: '0.7rem', fontWeight: 900,
+              display: 'inline-block', boxShadow: '0 0 15px rgba(255,215,0,0.4)'
+            }}>2x MULTIPLIER</div>
+          )}
         </div>
 
         {/* Right: best score */}

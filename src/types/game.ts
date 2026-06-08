@@ -1,6 +1,6 @@
 export type GameState = 'menu' | 'playing' | 'paused' | 'gameover';
 export type Lane = -1 | 0 | 1; // left, center, right
-export type PlayerAction = 'run' | 'jump' | 'slide' | 'fly' | 'hit';
+export type PlayerAction = 'run' | 'jump' | 'slide' | 'fly' | 'hit' | 'idle';
 
 export type PowerupType = 'magnet' | 'sneakers' | 'multiplier' | 'jetpack';
 

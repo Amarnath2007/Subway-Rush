@@ -29,6 +29,7 @@ import ErrorDebugger from '../ui/ErrorDebugger';
 function GameScene() {
   const gameState = useGameStore(s => s.gameState);
   const isActive  = gameState === 'playing' || gameState === 'paused';
+  const showPlayer = isActive || gameState === 'menu' || gameState === 'gameover';
 
   return (
     <>
@@ -44,10 +45,10 @@ function GameScene() {
       <Track />
 
       <Suspense fallback={null}>
-        {(isActive || gameState === 'gameover') && <Player />}
+        {showPlayer && <Player />}
       </Suspense>
 
-      {isActive && (
+      {(isActive || gameState === 'gameover') && (
         <>
           <Suspense fallback={null}><Obstacles /></Suspense>
           <Suspense fallback={null}><Coins /></Suspense>

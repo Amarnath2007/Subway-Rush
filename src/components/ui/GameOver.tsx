@@ -103,6 +103,30 @@ export default function GameOver() {
 
         {/* Buttons */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+          {!useGameStore.getState().reviveUsed && (
+            <button 
+              onClick={() => {
+                if (useGameStore.getState().revive()) {
+                  soundManager.playPowerup();
+                } else {
+                  alert("Not enough Diamonds!");
+                }
+              }}
+              style={{
+                background: 'linear-gradient(135deg,#00d2ff,#3a7bd5)',
+                border: 'none', borderRadius: 50, padding: '0.95rem 2rem',
+                fontSize: '1.05rem', fontWeight: 800, color: '#fff',
+                cursor: 'pointer', letterSpacing: 2, textTransform: 'uppercase',
+                transition: 'transform 0.12s ease, box-shadow 0.12s ease',
+                boxShadow: '0 6px 24px rgba(0,180,255,0.4)',
+                marginBottom: '4px',
+                opacity: useGameStore.getState().diamonds < 5 ? 0.6 : 1,
+              }}
+              onMouseEnter={e => { (e.target as HTMLElement).style.transform = 'scale(1.04)'; }}
+              onMouseLeave={e => { (e.target as HTMLElement).style.transform = 'scale(1)'; }}
+            >💎 REVIVE (5)</button>
+          )}
+
           <button onClick={handleRestart} style={{
             background: 'linear-gradient(135deg,#ffd700,#ff8c00)',
             border: 'none', borderRadius: 50, padding: '0.95rem 2rem',
