@@ -110,6 +110,7 @@ function FBXCharacter() {
       if (p) p.fadeOut(0.2);
       n.reset().setEffectiveWeight(1).fadeIn(0.2).play();
       if (next === 'idle') n.setEffectiveTimeScale(0.12);
+      else n.setEffectiveTimeScale(1.0);
       if (/jump|slide|hit/.test(next)) { n.setLoop(THREE.LoopOnce, 1); n.clampWhenFinished = true; }
       cur.current = next;
     }
@@ -151,22 +152,48 @@ export default function Player() {
       const jet = state.activePowerups.get('jetpack');
       const time = jet?.remaining ?? 10;
       let targetY = JETPACK_HEIGHT;
-      if (time < JETPACK_DESCENT_START_TIME) targetY = THREE.MathUtils.lerp(0.1, JETPACK_HEIGHT, time / JETPACK_DESCENT_START_TIME);
-      jumpYRef.current = THREE.MathUtils.lerp(jumpYRef.current, targetY, 0.12);
+      
+      // Smooth takeoff and consistent height
+      if (time > (jet?.duration ?? 10) - 1.0) {
+        // Takeoff phase (first 1 second)
+        const t = (jet!.duration - time);
+        targetY = THREE.MathUtils.lerp(0, JETPACK_HEIGHT, Math.min(1, t * 1.2));
+      } else if (time < JETPACK_DESCENT_START_TIME) {
+        // Warning/Descent phase
+        targetY = THREE.MathUtils.lerp(0.1, JETPACK_HEIGHT, time / JETPACK_DESCENT_START_TIME);
+      }
+      
+      jumpYRef.current = THREE.MathUtils.lerp(jumpYRef.current, targetY, 0.08); // smoother height transition
       wasJetpackActiveRef.current = true;
     } else {
-      if (wasJetpackActiveRef.current && jumpYRef.current > 0.1) { wasJetpackActiveRef.current = false; isJetpackLanding.current = true; }
+      if (wasJetpackActiveRef.current && jumpYRef.current > 0.1) { 
+        wasJetpackActiveRef.current = false; 
+        isJetpackLanding.current = true; 
+      }
+      
       if (isJetpackLanding.current) {
+        // Smooth controlled landing glide
         jumpYRef.current = THREE.MathUtils.lerp(jumpYRef.current, 0, JETPACK_LANDING_SPEED);
-        if (jumpYRef.current < 0.1) { jumpYRef.current = 0; isJetpackLanding.current = false; state.setJumping(false); landingSquashRef.current = 1.0; }
+        if (jumpYRef.current < 0.05) { 
+          jumpYRef.current = 0; 
+          isJetpackLanding.current = false; 
+          state.setJumping(false); 
+          landingSquashRef.current = 0.8; // subtle landing impact
+        }
       } else {
         if (state.isJumping && !isJumpPhysicsActive.current) {
           isJumpPhysicsActive.current = true;
           jumpVelRef.current = JUMP_FORCE * (state.activePowerups.has('sneakers') ? SNEAKERS_JUMP_MULTIPLIER : 1.0);
         }
         if (isJumpPhysicsActive.current) {
-          jumpVelRef.current += GRAVITY * delta; jumpYRef.current += jumpVelRef.current * delta;
-          if (jumpYRef.current <= 0) { jumpYRef.current = 0; isJumpPhysicsActive.current = false; state.setJumping(false); landingSquashRef.current = 1.0; }
+          jumpVelRef.current += GRAVITY * delta; 
+          jumpYRef.current += jumpVelRef.current * delta;
+          if (jumpYRef.current <= 0) { 
+            jumpYRef.current = 0; 
+            isJumpPhysicsActive.current = false; 
+            state.setJumping(false); 
+            landingSquashRef.current = 1.0; 
+          }
         }
       }
     }

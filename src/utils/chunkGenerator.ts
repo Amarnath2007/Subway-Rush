@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { ChunkData, CoinData, EnvProp, Lane, ObstacleData, PowerupData, PowerupType } from '../types/game';
 import { AERIAL_COIN_Y, CHUNK_LENGTH, GROUND_COIN_Y, POWERUP_SPAWN_CHANCE } from '../config/constants';
 
@@ -33,7 +34,7 @@ function aerialStraightPath(lane: Lane, startZ: number, count: number): CoinData
   return Array.from({ length: count }, (_, i) => ({
     id: uid(),
     lane,
-    z: startZ - i * 2.2,
+    z: startZ - i * 2.5, // slightly more spacing
     collected: false,
     kind: 'aerial' as const,
     y: AERIAL_COIN_Y,
@@ -43,15 +44,16 @@ function aerialStraightPath(lane: Lane, startZ: number, count: number): CoinData
 function aerialCurvedPath(startLane: Lane, endLane: Lane, startZ: number, count: number): CoinData[] {
   return Array.from({ length: count }, (_, i) => {
     const t = i / (count - 1);
-    const xOffset = (endLane - startLane) * 3.0 * t + (startLane * 3.0);
+    // Smooth lane transition
+    const laneX = THREE.MathUtils.lerp(startLane * 3.0, endLane * 3.0, t);
     return {
       id: uid(),
       lane: 0 as Lane,
-      z: startZ - i * 2.2,
+      z: startZ - i * 2.5,
       collected: false,
       kind: 'aerial' as const,
-      y: AERIAL_COIN_Y + Math.sin(t * Math.PI) * 1.5, // Arch effect
-      xOffset,
+      y: AERIAL_COIN_Y,
+      xOffset: laneX,
     };
   });
 }
@@ -59,39 +61,42 @@ function aerialCurvedPath(startLane: Lane, endLane: Lane, startZ: number, count:
 function aerialDoubleWave(startZ: number, count: number): CoinData[] {
   return Array.from({ length: count }, (_, i) => {
     const t = i / (count - 1);
-    const sin = Math.sin(t * Math.PI * 2);
+    const wave = Math.sin(t * Math.PI * 2);
     return {
       id: uid(),
       lane: 0 as Lane,
-      z: startZ - i * 2.0,
+      z: startZ - i * 2.2,
       collected: false,
       kind: 'aerial' as const,
-      y: AERIAL_COIN_Y + sin * 1.2,
-      xOffset: sin * 2.8,
+      y: AERIAL_COIN_Y,
+      xOffset: wave * 3.5, // wider wave for lane-to-lane feel
     };
   });
 }
 
 function aerialDiamondFormation(startZ: number): CoinData[] {
   const coins: CoinData[] = [];
-  const spacing = 1.8;
+  const spacing = 2.0;
+  // Cleaner diamond (horizontal only)
   const positions = [
-    { l: 0, z: 0, y: 0 },
-    { l: -1, z: spacing, y: 1 },
-    { l: 1, z: spacing, y: 1 },
-    { l: 0, z: spacing * 2, y: 2 },
-    { l: -1, z: spacing * 3, y: 1 },
-    { l: 1, z: spacing * 3, y: 1 },
-    { l:0, z: spacing * 4, y: 0 }
+    { l: 0, z: 0 },
+    { l: -0.5, z: spacing },
+    { l: 0.5, z: spacing },
+    { l: -1, z: spacing * 2 },
+    { l: 1, z: spacing * 2 },
+    { l: -0.5, z: spacing * 3 },
+    { l: 0.5, z: spacing * 3 },
+    { l: 0, z: spacing * 4 }
   ];
   positions.forEach(p => {
     coins.push({
       id: uid(),
-      lane: p.l as Lane,
+      lane: 0 as Lane,
       z: startZ - p.z,
       collected: false,
       kind: 'aerial' as const,
-      y: AERIAL_COIN_Y + p.y * 0.5,
+      y: AERIAL_COIN_Y,
+      xOffset: p.l * 3.0,
     });
   });
   return coins;
@@ -104,9 +109,15 @@ function generateAerialCoins(index: number, chunkZ: number): CoinData[] {
 
   switch (pattern) {
     case 0: return aerialStraightPath(0, entryZ, 12);
-    case 1: return aerialCurvedPath(-1, 1, entryZ, 14);
-    case 2: return [...aerialStraightPath(-1, entryZ, 8), ...aerialStraightPath(1, entryZ + 8, 8)];
-    case 3: return aerialDoubleWave(entryZ, 16);
+    case 1: return aerialCurvedPath(-1, 1, entryZ, 15);
+    case 2: {
+        // Lane switch trail
+        const coins = [...aerialStraightPath(-1, entryZ, 6)];
+        const transition = aerialCurvedPath(-1, 1, entryZ - 6 * 2.5, 6);
+        const exit = aerialStraightPath(1, entryZ - 12 * 2.5, 6);
+        return [...coins, ...transition, ...exit];
+    }
+    case 3: return aerialDoubleWave(entryZ, 18);
     case 4: return aerialDiamondFormation(entryZ);
     default: return aerialStraightPath(0, entryZ, 10);
   }
@@ -123,7 +134,7 @@ function generateObstacles(index: number, chunkZ: number, difficulty: number): O
     const roll = Math.random();
     const lane = randomLane();
     if (roll < 0.35) {
-      obstacles.push({ id: uid(), lane, z, type: 'train' }); // Train (increased from 0.25)
+      obstacles.push({ id: uid(), lane, z, type: 'train', trainVariant: Math.random() > 0.5 ? 'train1' : 'train2'});
     } else {
       obstacles.push({ id: uid(), lane, z, type: 'up' }); // Hurdle (now 0.35-1.0, removed down obstacles)
     }

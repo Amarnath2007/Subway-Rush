@@ -11,7 +11,7 @@ export const MAX_SPEED = 38;
 export const SPEED_INCREMENT_PER_SEC = 0.24;
 
 // Jump and slide feel — tuned for snappy, responsive controls.
-export const JUMP_FORCE = 13.2;
+export const JUMP_FORCE = 13.8;
 export const GRAVITY = -34;
 export const SLIDE_DURATION = 720;
 
@@ -65,8 +65,8 @@ export const MAGNET_COLLECT_RADIUS = 1.45;
 
 export const SNEAKERS_JUMP_MULTIPLIER = 2.3; 
 
-export const JETPACK_HEIGHT = 18.0;            
-export const AERIAL_COIN_Y = JETPACK_HEIGHT + 0.8;
+export const JETPACK_HEIGHT = 13.5;            
+export const AERIAL_COIN_Y = JETPACK_HEIGHT + 0.6;
 export const POWERUP_COLLECT_RADIUS = 1.6;
 export const POWERUP_PICKUP_Y = 1.05;
 export const CRASH_GAME_OVER_DELAY_MS = 780;
@@ -77,7 +77,7 @@ export const JETPACK_COIN_STOP_BEFORE_END = 2.4;
 export const JETPACK_DESCENT_START_TIME = 1.2;   
 
 // Jetpack landing
-export const JETPACK_LANDING_SPEED = 0.070;       
+export const JETPACK_LANDING_SPEED = 0.085;       
 export const JETPACK_LANDING_IMMUNITY_HEIGHT = 3.0; 
 
 // Obstacle collision tuning 
@@ -90,13 +90,6 @@ export const OBS_TRAIN_DZ_OFFSET = 3.5;
 export const OBS_Z_MIN = -0.6;      
 export const OBS_Z_MAX = 0.4;       
 
-// Moving trains
-export const MOVING_TRAIN_MIN_SPEED = 10;
-export const MOVING_TRAIN_MAX_SPEED = 20;
-export const MOVING_TRAIN_SPAWN_INTERVAL = 3.5;  
-export const MOVING_TRAIN_MIN_CARS = 1;
-export const MOVING_TRAIN_MAX_CARS = 4;
-export const MOVING_TRAIN_CAR_LENGTH = 8.0;
 
 // Missions
 export const MISSIONS_CONFIG = [

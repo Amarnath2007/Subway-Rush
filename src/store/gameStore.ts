@@ -367,9 +367,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
     runtime.score = Math.max(runtime.score, score) + COIN_SCORE * multiplier;
     runtime.sessionCoins += 1;
     
-    const newMissions = missions.map(m =>
-      m.id === 'collect_coins' ? { ...m, current: Math.min(m.current + 1, m.target) } : m
-    );
+    const newMissions = missions.map(m => {
+      if (m.id !== 'collect_coins') return m;
+      let nextCurrent = m.current + 1;
+      let nextTarget = m.target;
+      if (nextCurrent >= nextTarget) {
+        nextCurrent = 0;
+        nextTarget = Math.floor(nextTarget * 1.5);
+      }
+      return { ...m, current: nextCurrent, target: nextTarget };
+    });
     
     set({ 
       collectedCoinIds: newIds, 
@@ -394,9 +401,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
     runtime.sessionJumps += 1;
     const { missions } = get();
     set({
-      missions: missions.map(m =>
-        m.id === 'jump_times' ? { ...m, current: Math.min(m.current + 1, m.target) } : m
-      ),
+      missions: missions.map(m => {
+        if (m.id !== 'jump_times') return m;
+        let nextCurrent = m.current + 1;
+        let nextTarget = m.target;
+        if (nextCurrent >= nextTarget) {
+          nextCurrent = 0;
+          nextTarget = Math.floor(nextTarget * 1.5);
+        }
+        return { ...m, current: nextCurrent, target: nextTarget };
+      }),
     });
   },
 
@@ -404,9 +418,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
     runtime.sessionSlides += 1;
     const { missions } = get();
     set({
-      missions: missions.map(m =>
-        m.id === 'slide_times' ? { ...m, current: Math.min(m.current + 1, m.target) } : m
-      ),
+      missions: missions.map(m => {
+        if (m.id !== 'slide_times') return m;
+        let nextCurrent = m.current + 1;
+        let nextTarget = m.target;
+        if (nextCurrent >= nextTarget) {
+          nextCurrent = 0;
+          nextTarget = Math.floor(nextTarget * 1.5);
+        }
+        return { ...m, current: nextCurrent, target: nextTarget };
+      }),
     });
   },
 
