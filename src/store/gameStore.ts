@@ -202,6 +202,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
   isGameOverPending: false,
   crashVersion: 0,
   reviveUsed: false,
+  reviveSlowMo: 0,
+  reviveSafetyTime: 0,
+  reviveBoom: false,
 
   startGame: () => {
     resetRuntime();

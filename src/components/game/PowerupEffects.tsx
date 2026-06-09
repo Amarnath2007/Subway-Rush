@@ -104,7 +104,12 @@ function MultiplierEffect() {
       if (!mesh) return;
       mesh.position.y = (p.pos.y + clock.elapsedTime * p.speed) % 2.5;
       mesh.scale.setScalar(0.5 + Math.sin(clock.elapsedTime * 5 + i) * 0.5);
-      mesh.material.opacity = 0.3 + Math.sin(clock.elapsedTime * 4 + i) * 0.3;
+      
+      // Type-safe material opacity modification
+      const material = mesh.material as THREE.MeshBasicMaterial;
+      if (material) {
+        material.opacity = 0.3 + Math.sin(clock.elapsedTime * 4 + i) * 0.3;
+      }
     });
   });
 

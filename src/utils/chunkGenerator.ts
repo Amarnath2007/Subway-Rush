@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ChunkData, CoinData, EnvProp, Lane, ObstacleData, PowerupData, PowerupType } from '../types/game';
+import { ChunkData, CoinData, EnvProp, EnvPropType, Lane, ObstacleData, PowerupData, PowerupType } from '../types/game';
 import { AERIAL_COIN_Y, CHUNK_LENGTH, GROUND_COIN_Y, POWERUP_SPAWN_CHANCE } from '../config/constants';
 
 let gid = 0;
