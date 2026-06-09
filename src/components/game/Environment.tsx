@@ -8,11 +8,17 @@ import { CHUNK_LENGTH, TARGET_BUILDING_HEIGHT, TARGET_TREE_HEIGHT } from '../../
 import { EnvProp } from '../../types/game';
 import { InstancedModelBatch, InstancedModelItem } from './InstancedModel';
 
-const BUILDING_URL = '/assets/Environment/cartoon_building2.glb';
-const TREE_URL = '/assets/Environment/stylized_tree.glb';
+const BUILDING1_URL = '/assets/Environment/cartoon_building1.glb';
+const BUILDING2_URL = '/assets/Environment/cartoon_building2.glb';
+const BUILDING3_URL = '/assets/Environment/cartoon_building3.glb';
+const TREE1_URL = '/assets/Environment/stylized_tree.glb';
+const TREE2_URL = '/assets/Environment/tree2.glb';
 
-useGLTF.preload(BUILDING_URL);
-useGLTF.preload(TREE_URL);
+useGLTF.preload(BUILDING1_URL);
+useGLTF.preload(BUILDING2_URL);
+useGLTF.preload(BUILDING3_URL);
+useGLTF.preload(TREE1_URL);
+useGLTF.preload(TREE2_URL);
 
 const BUILDING_COLORS = [
   '#e57373', '#f06292', '#ba68c8', '#64b5f6', '#4dd0e1',
@@ -34,17 +40,25 @@ function toTreeItem(prop: EnvProp): InstancedModelItem {
     id: prop.id,
     position: [prop.x, 0, prop.z],
     rotationY: seed * Math.PI * 2,
-    scale: 0.86 + seed * 0.28,
+    scale: 0.86 + seed * 0.45,
   };
 }
-
 function toBuildingItem(prop: EnvProp): InstancedModelItem {
   const seed = hashUnit(`${prop.id}:${prop.type}`);
+
+  let rotationY: number;
+
+  if (prop.type === 'building3') {
+    rotationY = prop.side === 'left' ? 0 : 0;
+  } else {
+    rotationY = prop.side === 'left' ? Math.PI * 0.5 : -Math.PI * 0.5;
+  }
+
   return {
     id: prop.id,
     position: [prop.x, 0, prop.z],
-    rotationY: prop.side === 'left' ? Math.PI * 0.5 : -Math.PI * 0.5,
-    scale: (prop.type === 'building2' ? 1.12 : 0.82) + seed * 0.18,
+    rotationY,
+    scale: (prop.type === 'building1' ? 0.95 : prop.type === 'building2' ? 1.15 : 1.35) + seed * 0.25,
   };
 }
 
@@ -71,12 +85,12 @@ function StaticInstances({
     if (!mesh) return;
     mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
     matrices.forEach((matrix, index) => mesh.setMatrixAt(index, matrix));
-    
+
     if (colors && colors.length === matrices.length) {
       colors.forEach((color, index) => mesh.setColorAt(index, color));
       mesh.instanceColor!.needsUpdate = true;
     }
-    
+
     mesh.instanceMatrix.needsUpdate = true;
     mesh.computeBoundingSphere();
   }, [matrices, colors]);
@@ -90,6 +104,8 @@ function StaticInstances({
       args={[geometry, material, matrices.length]}
       frustumCulled={true}
       dispose={null}
+      castShadow
+      receiveShadow
     />
   );
 }
@@ -136,17 +152,74 @@ function OverheadWires({ chunkFronts }: { chunkFronts: number[] }) {
 }
 
 function DistantSkyline() {
+  const skylineMat = useMemo(() => new THREE.MeshStandardMaterial({
+    color: '#90a4ae',
+    roughness: 0.9,
+    metalness: 0.1,
+    transparent: true,
+  }), []);
+
   return (
-    <group position={[0, 0, -120]}>
-      {[-28, -20, -14, -6, 0, 6, 14, 20, 28].map((x, i) => {
-        const h = 10 + Math.abs(Math.sin(i * 1.7)) * 18;
-        return (
-          <mesh key={i} position={[x, h / 2, 0]}>
-            <boxGeometry args={[4.5, h, 2]} />
-            <meshStandardMaterial color={getBuildingColor(x, i * 7)} roughness={0.85} metalness={0.05} />
+    <group position={[0, 0, -180]}>
+      {/* City Fog/Atmosphere Plane */}
+      <mesh position={[0, 20, -5]} rotation={[0, 0, 0]}>
+        <planeGeometry args={[400, 200]} />
+        <meshBasicMaterial color="#b3e5fc" transparent opacity={0.3} />
+      </mesh>
+
+      {/* Primary Skyline Layer */}
+      <group position={[0, 0, 0]}>
+        {[-140, -120, -100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100, 120, 140].map((x, i) => {
+          const h = 15 + Math.abs(Math.sin(i * 1.7)) * 25;
+          const w = 8 + Math.random() * 6;
+          return (
+            <mesh key={`b1-${i}`} position={[x, h / 2, 0]}>
+              <boxGeometry args={[w, h, 8]} />
+              <meshStandardMaterial color={getBuildingColor(x, i * 7)} roughness={0.9} metalness={0.05} />
+            </mesh>
+          );
+        })}
+      </group>
+
+      {/* Further Skyline Layer */}
+      <group position={[0, 0, -40]}>
+        {[-180, -150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150, 180].map((x, i) => {
+          const h = 40 + Math.abs(Math.cos(i * 2.1)) * 30;
+          const w = 12 + Math.random() * 8;
+          return (
+            <mesh key={`b2-${i}`} position={[x, h / 2, 0]}>
+              <boxGeometry args={[w, h, 10]} />
+              <meshStandardMaterial color="#78909c" roughness={1.0} />
+            </mesh>
+          );
+        })}
+      </group>
+    </group>
+  );
+}
+
+function Clouds() {
+  const cloudGeo = useMemo(() => new THREE.SphereGeometry(1, 12, 12), []);
+  const cloudMat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.8 }), []);
+
+  return (
+    <group position={[0, 45, -120]}>
+      {[...Array(12)].map((_, i) => (
+        <group key={i} position={[(i - 6) * 35 + Math.random() * 15, Math.random() * 12, -Math.random() * 60]}>
+          <mesh scale={[12, 5, 7]}>
+            <primitive object={cloudGeo} />
+            <primitive object={cloudMat} />
           </mesh>
-        );
-      })}
+          <mesh position={[5, -1, 3]} scale={[7, 3.5, 4.5]}>
+            <primitive object={cloudGeo} />
+            <primitive object={cloudMat} />
+          </mesh>
+          <mesh position={[-4, 1.5, -3]} scale={[8, 4, 6]}>
+            <primitive object={cloudGeo} />
+            <primitive object={cloudMat} />
+          </mesh>
+        </group>
+      ))}
     </group>
   );
 }
@@ -162,79 +235,201 @@ export default function Environment() {
   const envProps = useMemo(() => chunks.flatMap(c => c.envProps), [chunks]);
   const chunkFronts = useMemo(() => chunks.map(c => c.z), [chunks]);
 
-  const treeItems = useMemo(() => envProps.filter(p => p.type === 'tree').map(toTreeItem), [envProps]);
-  const buildingItems = useMemo(() => envProps.filter(p => p.type === 'building1' || p.type === 'building2').map(toBuildingItem), [envProps]);
+  const tree1Items = useMemo(() => envProps.filter(p => p.type === 'tree1').map(toTreeItem), [envProps]);
+  const tree2Items = useMemo(() => envProps.filter(p => p.type === 'tree2').map(toTreeItem), [envProps]);
 
-  // Procedural props
+  const building1Items = useMemo(() => envProps.filter(p => p.type === 'building1').map(toBuildingItem), [envProps]);
+  const building2Items = useMemo(() => envProps.filter(p => p.type === 'building2').map(toBuildingItem), [envProps]);
+  const building3Items = useMemo(() => envProps.filter(p => p.type === 'building3').map(toBuildingItem), [envProps]);
+
+  // --- High-Quality Procedural Geometries ---
+
+  // --- High-Quality Procedural Geometries (Scaled up for better presence) ---
+
   const fenceGeo = useMemo(() => {
-    const geo = new THREE.BoxGeometry(0.1, 0.8, 10);
-    geo.translate(0, 0.4, 0);
+    const geo = new THREE.BoxGeometry(0.15, 1.2, 12.5);
+    geo.translate(0, 0.6, 0);
     return geo;
   }, []);
-  const fenceMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#555', roughness: 0.8 }), []);
-  const fenceMatrices = useMemo(() => envProps.filter(p => p.type === 'fence').map(p => {
-    const m = new THREE.Matrix4();
-    m.compose(new THREE.Vector3(p.x, 0, p.z), new THREE.Quaternion(), new THREE.Vector3(1, 1, 1));
-    return m;
-  }), [envProps]);
+  const fenceMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#455a64', roughness: 0.7 }), []);
 
   const streetlightGeo = useMemo(() => {
-    const poleFinal = new THREE.CylinderGeometry(0.08, 0.1, 4.5, 8);
-    poleFinal.translate(0, 2.25, 0);
-    const lampFinal = new THREE.BoxGeometry(0.6, 0.15, 0.3);
-    lampFinal.translate(0.3, 4.5, 0);
-    
-    return mergeBufferGeometries([poleFinal, lampFinal]) ?? poleFinal;
+    const pole = new THREE.CylinderGeometry(0.12, 0.18, 7.5, 8);
+    pole.translate(0, 3.75, 0);
+    const lamp = new THREE.BoxGeometry(1.2, 0.3, 0.6);
+    lamp.translate(0.6, 7.5, 0);
+    return mergeBufferGeometries([pole, lamp]) ?? pole;
   }, []);
-  const streetlightMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#444', roughness: 0.5 }), []);
-  const streetlightMatrices = useMemo(() => envProps.filter(p => p.type === 'streetlight').map(p => {
+
+  const fancyStreetlightGeo = useMemo(() => {
+    const pole = new THREE.CylinderGeometry(0.15, 0.22, 8.5, 8);
+    pole.translate(0, 4.25, 0);
+    const arm = new THREE.CylinderGeometry(0.08, 0.08, 1.8, 8);
+    arm.rotateZ(Math.PI / 2.5);
+    arm.translate(0.8, 8.2, 0);
+    const head = new THREE.BoxGeometry(1.0, 0.4, 0.8);
+    head.translate(1.5, 8.4, 0);
+    return mergeBufferGeometries([pole, arm, head]) ?? pole;
+  }, []);
+
+  const streetlightMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#37474f', roughness: 0.4, metalness: 0.3 }), []);
+
+  const trashbinGeo = useMemo(() => {
+    const body = new THREE.CylinderGeometry(0.4, 0.35, 1.3, 12);
+    body.translate(0, 0.65, 0);
+    const lid = new THREE.CylinderGeometry(0.45, 0.45, 0.15, 12);
+    lid.translate(0, 1.3, 0);
+    return mergeBufferGeometries([body, lid]) ?? body;
+  }, []);
+  const trashbinMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#546e7a', roughness: 0.6 }), []);
+
+  const mailboxGeo = useMemo(() => {
+    const post = new THREE.CylinderGeometry(0.08, 0.08, 1.2, 8);
+    post.translate(0, 0.6, 0);
+    const box = new THREE.BoxGeometry(0.7, 0.8, 1.0);
+    box.translate(0, 1.6, 0);
+    return mergeBufferGeometries([post, box]) ?? box;
+  }, []);
+  const mailboxMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#d32f2f', roughness: 0.5 }), []);
+
+  const planterGeo = useMemo(() => {
+    const pot = new THREE.BoxGeometry(1.8, 1.0, 1.8);
+    pot.translate(0, 0.5, 0);
+    const dirt = new THREE.BoxGeometry(1.6, 0.2, 1.6);
+    dirt.translate(0, 1.0, 0);
+    return mergeBufferGeometries([pot, dirt]) ?? pot;
+  }, []);
+  const planterMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#795548', roughness: 0.8 }), []);
+
+  const bushGeo = useMemo(() => {
+    const g1 = new THREE.SphereGeometry(0.85, 8, 8);
+    g1.translate(0, 0.7, 0);
+    const g2 = new THREE.SphereGeometry(0.7, 8, 8);
+    g2.translate(0.6, 0.5, 0.3);
+    const g3 = new THREE.SphereGeometry(0.75, 8, 8);
+    g3.translate(-0.5, 0.6, -0.2);
+    return mergeBufferGeometries([g1, g2, g3]) ?? g1;
+  }, []);
+  const bushLargeGeo = useMemo(() => {
+    const g1 = new THREE.SphereGeometry(1.3, 8, 8);
+    g1.translate(0, 1.0, 0);
+    const g2 = new THREE.SphereGeometry(0.9, 8, 8);
+    g2.translate(0.8, 0.8, 0.5);
+    const g3 = new THREE.SphereGeometry(1.0, 8, 8);
+    g3.translate(-0.75, 0.9, -0.3);
+    const g4 = new THREE.SphereGeometry(0.8, 8, 8);
+    g4.translate(0.2, 1.6, -0.2);
+    return mergeBufferGeometries([g1, g2, g3, g4]) ?? g1;
+  }, []);
+  const bushMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#2e7d32', roughness: 1.0 }), []);
+
+  const signboardGeo = useMemo(() => {
+    const post = new THREE.BoxGeometry(0.15, 3.5, 0.15);
+    post.translate(0, 1.75, 0);
+    const board = new THREE.BoxGeometry(2.0, 1.3, 0.15);
+    board.translate(0, 2.8, 0.15);
+    return mergeBufferGeometries([post, board]) ?? post;
+  }, []);
+  const signboardMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#37474f', roughness: 0.4 }), []);
+
+  const busStopGeo = useMemo(() => {
+    const floor = new THREE.BoxGeometry(6.5, 0.15, 2.8);
+    floor.translate(0, 0.075, 0);
+    const p1 = new THREE.BoxGeometry(0.15, 3.8, 0.15); p1.translate(-3.1, 1.9, 1.3);
+    const p2 = new THREE.BoxGeometry(0.15, 3.8, 0.15); p2.translate(3.1, 1.9, 1.3);
+    const p3 = new THREE.BoxGeometry(0.15, 3.8, 0.15); p3.translate(-3.1, 1.9, -1.3);
+    const p4 = new THREE.BoxGeometry(0.15, 3.8, 0.15); p4.translate(3.1, 1.9, -1.3);
+    const roof = new THREE.BoxGeometry(6.8, 0.2, 3.0); roof.translate(0, 3.8, 0);
+    const back = new THREE.BoxGeometry(6.2, 3.5, 0.08); back.translate(0, 1.8, -1.35);
+    return mergeBufferGeometries([floor, p1, p2, p3, p4, roof, back]) ?? floor;
+  }, []);
+  const busStopMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#455a64', roughness: 0.3, metalness: 0.4 }), []);
+
+  const benchGeo = useMemo(() => {
+    const seat = new THREE.BoxGeometry(2.6, 0.15, 1.0);
+    seat.translate(0, 0.7, 0);
+    const back = new THREE.BoxGeometry(2.6, 0.9, 0.15);
+    back.translate(0, 1.25, -0.5);
+    const leg1 = new THREE.BoxGeometry(0.15, 0.7, 0.15); leg1.translate(-1.1, 0.35, 0.35);
+    const leg2 = new THREE.BoxGeometry(0.15, 0.7, 0.15); leg2.translate(1.1, 0.35, 0.35);
+    const leg3 = new THREE.BoxGeometry(0.15, 0.7, 0.15); leg3.translate(-1.1, 0.35, -0.35);
+    const leg4 = new THREE.BoxGeometry(0.15, 0.7, 0.15); leg4.translate(1.1, 0.35, -0.35);
+    return mergeBufferGeometries([seat, back, leg1, leg2, leg3, leg4]) ?? seat;
+  }, []);
+  const benchMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#5d4037', roughness: 0.8 }), []);
+
+  const grassGeo = useMemo(() => new THREE.PlaneGeometry(3.5, CHUNK_LENGTH), []);
+  const grassMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#558b2f', roughness: 1.0 }), []);
+
+  // --- Instance Matrices Memos ---
+
+  const getMatrices = (type: string) => envProps.filter(p => p.type === type).map(p => {
     const m = new THREE.Matrix4();
-    const rot = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), p.side === 'left' ? Math.PI : 0);
+    const rot = new THREE.Quaternion().setFromAxisAngle(
+      new THREE.Vector3(0, 1, 0), 
+      p.side === 'left' ? Math.PI : 0
+    );
+    // Special rotation for bench & bus stop to face the track
+    if (type === 'bench' || type === 'bus_stop') {
+      rot.setFromAxisAngle(new THREE.Vector3(0, 1, 0), p.side === 'left' ? Math.PI / 2 : -Math.PI / 2);
+    }
     m.compose(new THREE.Vector3(p.x, 0, p.z), rot, new THREE.Vector3(1, 1, 1));
     return m;
-  }), [envProps]);
+  });
 
-  const grassGeo = useMemo(() => new THREE.PlaneGeometry(2.5, CHUNK_LENGTH), []);
-  const grassMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#4d7c0f', roughness: 1.0 }), []);
+  const fenceMatrices = useMemo(() => getMatrices('fence'), [envProps]);
+  const streetlightMatrices = useMemo(() => getMatrices('streetlight'), [envProps]);
+  const fancyStreetlightMatrices = useMemo(() => getMatrices('streetlight_fancy'), [envProps]);
+  const trashbinMatrices = useMemo(() => getMatrices('trashbin'), [envProps]);
+  const mailboxMatrices = useMemo(() => getMatrices('mailbox'), [envProps]);
+  const planterMatrices = useMemo(() => getMatrices('planter'), [envProps]);
+  const bushMatrices = useMemo(() => getMatrices('bush'), [envProps]);
+  const bushLargeMatrices = useMemo(() => getMatrices('bush_large'), [envProps]);
+  const signboardMatrices = useMemo(() => getMatrices('signboard'), [envProps]);
+  const busStopMatrices = useMemo(() => getMatrices('bus_stop'), [envProps]);
+  const benchMatrices = useMemo(() => getMatrices('bench'), [envProps]);
+  
   const grassMatrices = useMemo(() => envProps.filter(p => p.type === 'grass').map(p => {
     const m = new THREE.Matrix4();
     const rot = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
-    m.compose(new THREE.Vector3(p.x, 0.01, p.z), rot, new THREE.Vector3(1, 1, 1));
-    return m;
-  }), [envProps]);
-
-  const benchGeo = useMemo(() => {
-    const seat = new THREE.BoxGeometry(1.2, 0.1, 0.5);
-    seat.translate(0, 0.45, 0);
-    const back = new THREE.BoxGeometry(1.2, 0.5, 0.1);
-    back.translate(0, 0.7, -0.25);
-    return mergeBufferGeometries([seat, back]) ?? seat;
-  }, []);
-  const benchMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#5d4037', roughness: 0.9 }), []);
-  const benchMatrices = useMemo(() => envProps.filter(p => p.type === 'bench').map(p => {
-    const m = new THREE.Matrix4();
-    const rot = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), p.side === 'left' ? Math.PI / 2 : -Math.PI / 2);
-    m.compose(new THREE.Vector3(p.x, 0, p.z), rot, new THREE.Vector3(1, 1, 1));
+    m.compose(new THREE.Vector3(p.x, 0.015, p.z), rot, new THREE.Vector3(1, 1, 1));
     return m;
   }), [envProps]);
 
   return (
     <>
-      <Sky sunPosition={[80, 25, 60]} turbidity={4} rayleigh={0.6} mieCoefficient={0.004} mieDirectionalG={0.85} />
-      <Stars radius={120} depth={40} count={420} factor={2.4} saturation={0} fade />
+      <Sky
+        sunPosition={[100, 40, 80]}
+        turbidity={0.2}
+        rayleigh={1.2}
+        mieCoefficient={0.005}
+        mieDirectionalG={0.8}
+      />
+      <fog attach="fog" args={['#b3e5fc', 30, 250]} />
 
+      <Clouds />
       <DistantSkyline />
 
       <group ref={groupRef}>
-        <InstancedModelBatch url={TREE_URL} targetHeight={TARGET_TREE_HEIGHT} items={treeItems} />
-        <InstancedModelBatch url={BUILDING_URL} targetHeight={TARGET_BUILDING_HEIGHT} items={buildingItems} />
-        <OverheadWires chunkFronts={chunkFronts} />
-        
-        {/* New V2 Procedural Props */}
+        <InstancedModelBatch url={TREE1_URL} targetHeight={TARGET_TREE_HEIGHT} items={tree1Items} castShadow receiveShadow />
+        <InstancedModelBatch url={TREE2_URL} targetHeight={TARGET_TREE_HEIGHT * 1.2} items={tree2Items} castShadow receiveShadow />
+
+        <InstancedModelBatch url={BUILDING1_URL} targetHeight={TARGET_BUILDING_HEIGHT * 0.9} items={building1Items} castShadow receiveShadow />
+        <InstancedModelBatch url={BUILDING2_URL} targetHeight={TARGET_BUILDING_HEIGHT} items={building2Items} castShadow receiveShadow />
+        <InstancedModelBatch url={BUILDING3_URL} targetHeight={TARGET_BUILDING_HEIGHT * 1.3} items={building3Items} castShadow receiveShadow />
+
         <StaticInstances geometry={fenceGeo} material={fenceMat} matrices={fenceMatrices} />
         <StaticInstances geometry={streetlightGeo} material={streetlightMat} matrices={streetlightMatrices} />
-        <StaticInstances geometry={grassGeo} material={grassMat} matrices={grassMatrices} />
+        <StaticInstances geometry={fancyStreetlightGeo} material={streetlightMat} matrices={fancyStreetlightMatrices} />
+        <StaticInstances geometry={trashbinGeo} material={trashbinMat} matrices={trashbinMatrices} />
+        <StaticInstances geometry={mailboxGeo} material={mailboxMat} matrices={mailboxMatrices} />
+        <StaticInstances geometry={planterGeo} material={planterMat} matrices={planterMatrices} />
+        <StaticInstances geometry={bushGeo} material={bushMat} matrices={bushMatrices} />
+        <StaticInstances geometry={bushLargeGeo} material={bushMat} matrices={bushLargeMatrices} />
+        <StaticInstances geometry={signboardGeo} material={signboardMat} matrices={signboardMatrices} />
+        <StaticInstances geometry={busStopGeo} material={busStopMat} matrices={busStopMatrices} />
         <StaticInstances geometry={benchGeo} material={benchMat} matrices={benchMatrices} />
+        <StaticInstances geometry={grassGeo} material={grassMat} matrices={grassMatrices} />
       </group>
     </>
   );

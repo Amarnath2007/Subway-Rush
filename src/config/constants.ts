@@ -6,9 +6,9 @@ export const LANE_WIDTH = 3.0;
 export const LANE_SWITCH_SPEED = 14;
 
 // Speed and difficulty. The world moves toward the fixed player.
-export const INITIAL_SPEED = 15;
-export const MAX_SPEED = 38;
-export const SPEED_INCREMENT_PER_SEC = 0.24;
+export const INITIAL_SPEED = 18.0;
+export const MAX_SPEED = 40.0;
+export const SPEED_INCREMENT_PER_SEC = 0.16;
 
 // Jump and slide feel — tuned for snappy, responsive controls.
 export const JUMP_FORCE = 13.8;
@@ -16,10 +16,10 @@ export const GRAVITY = -34;
 export const SLIDE_DURATION = 720;
 
 // Jump input improvements.
-export const JUMP_BUFFER_MS = 120;      
-export const COYOTE_TIME_MS = 80;       
-export const LANDING_SQUASH_DURATION = 0.15; 
-export const LANE_TILT_AMOUNT = 0.08;   
+export const JUMP_BUFFER_MS = 120;
+export const COYOTE_TIME_MS = 80;
+export const LANDING_SQUASH_DURATION = 0.15;
+export const LANE_TILT_AMOUNT = 0.08;
 
 // Endless world chunk window.
 export const CHUNK_LENGTH = 50;
@@ -32,11 +32,11 @@ export const SCORE_PER_SECOND = 1;
 
 // Camera tuning — V3.1 Cinematic Flight
 export const BASE_FOV = 57;
-export const MAX_FOV_SPEED = 72;        
-export const JETPACK_FOV_BOOST = 15;    
-export const CAMERA_JETPACK_PULLBACK = 6.0; 
-export const CAMERA_JETPACK_HEIGHT = 8.5;   
-export const CAMERA_JETPACK_LOOK_DOWN = 6.0; 
+export const MAX_FOV_SPEED = 72;
+export const JETPACK_FOV_BOOST = 15;
+export const CAMERA_JETPACK_PULLBACK = 6.0;
+export const CAMERA_JETPACK_HEIGHT = 8.5;
+export const CAMERA_JETPACK_LOOK_DOWN = 6.0;
 
 // Collider dimensions.
 export const PLAYER_COLLIDER = { hw: 0.45, hh: 1.05, hd: 0.4 };
@@ -55,7 +55,7 @@ export const TARGET_POWERUP_HEIGHT = 1.25;
 export const GROUND_COIN_Y = 0.9;
 
 // Powerup configuration.
-export const POWERUP_SPAWN_CHANCE = 0.14;   
+export const POWERUP_SPAWN_CHANCE = 0.14;
 export const POWERUP_MAGNET_DURATION = 10;
 export const POWERUP_SNEAKERS_DURATION = 10;
 export const POWERUP_MULTIPLIER_DURATION = 15;
@@ -63,32 +63,32 @@ export const POWERUP_JETPACK_DURATION = 10;
 export const MAGNET_RADIUS = 6.0;
 export const MAGNET_COLLECT_RADIUS = 1.45;
 
-export const SNEAKERS_JUMP_MULTIPLIER = 2.3; 
+export const SNEAKERS_JUMP_MULTIPLIER = 2.3;
 
-export const JETPACK_HEIGHT = 13.5;            
+export const JETPACK_HEIGHT = 13.5;
 export const AERIAL_COIN_Y = JETPACK_HEIGHT + 0.6;
 export const POWERUP_COLLECT_RADIUS = 1.6;
 export const POWERUP_PICKUP_Y = 1.05;
 export const CRASH_GAME_OVER_DELAY_MS = 780;
 
 // Jetpack timing & Warning System
-export const JETPACK_WARNING_TIME = 2.5; 
-export const JETPACK_COIN_STOP_BEFORE_END = 2.4; 
-export const JETPACK_DESCENT_START_TIME = 1.2;   
+export const JETPACK_WARNING_TIME = 2.5;
+export const JETPACK_COIN_STOP_BEFORE_END = 2.4;
+export const JETPACK_DESCENT_START_TIME = 1.2;
 
 // Jetpack landing
-export const JETPACK_LANDING_SPEED = 0.085;       
-export const JETPACK_LANDING_IMMUNITY_HEIGHT = 3.0; 
+export const JETPACK_LANDING_SPEED = 0.085;
+export const JETPACK_LANDING_IMMUNITY_HEIGHT = 3.0;
 
 // Obstacle collision tuning 
-export const OBS_UP_DX = 1.1;       
-export const OBS_UP_PY = 2.1;      
-export const OBS_DOWN_DX = 1.1;     
-export const OBS_TRAIN_DX = 1.45;    
+export const OBS_UP_DX = 1.1;
+export const OBS_UP_PY = 2.1;
+export const OBS_DOWN_DX = 1.1;
+export const OBS_TRAIN_DX = 1.45;
 export const OBS_TRAIN_PY = 4.0;
-export const OBS_TRAIN_DZ_OFFSET = 3.5; 
-export const OBS_Z_MIN = -0.6;      
-export const OBS_Z_MAX = 0.4;       
+export const OBS_TRAIN_DZ_OFFSET = 3.5;
+export const OBS_Z_MIN = -0.6;
+export const OBS_Z_MAX = 0.4;
 
 
 // Missions
@@ -107,8 +107,8 @@ export interface CharacterConfig {
   costCoins: number;
   costDiamonds: number;
   modelPath: string;
-  yOffset?: number;        
-  scaleOverride?: number;  
+  yOffset?: number;
+  scaleOverride?: number;
 }
 
 export const CHARACTERS: CharacterConfig[] = [
@@ -116,7 +116,7 @@ export const CHARACTERS: CharacterConfig[] = [
   { id: 'Amy', name: 'Amy', rarity: 'Rare', costCoins: 2000, costDiamonds: 20, modelPath: '/assets/runner/runner/characters/Amy.fbx', scaleOverride: 1.0, yOffset: 0.05 },
   { id: 'Claire', name: 'Claire', rarity: 'Epic', costCoins: 4000, costDiamonds: 40, modelPath: '/assets/runner/runner/characters/claire.fbx', scaleOverride: 1.0, yOffset: 0.05 },
   { id: 'Mousey', name: 'Mousey', rarity: 'Epic', costCoins: 7000, costDiamonds: 70, modelPath: '/assets/runner/runner/characters/mousey.fbx', scaleOverride: 0.80, yOffset: 0.08 },
-  { id: 'Knight', name: 'Knight', rarity: 'Legendary', costCoins: 10000, costDiamonds: 100, modelPath: '/assets/runner/runner/characters/Knight.fbx', scaleOverride: 1.0, yOffset: 0.18 },
+  { id: 'Knight', name: 'Knight', rarity: 'Legendary', costCoins: 10000, costDiamonds: 100, modelPath: '/assets/runner/runner/characters/Knight.fbx', scaleOverride: 1.3, yOffset: 0.75 },
 ];
 
 export const POWERUP_UPGRADE_COSTS = [0, 500, 1000, 2000, 4000];

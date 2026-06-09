@@ -3,134 +3,139 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { jumpYRef, playerXRef, useGameStore } from '../../store/gameStore';
 
-function MagnetTrail() {
-  const points = useMemo(() => {
-    const p = [];
-    for (let i = 0; i < 28; i++) {
-        p.push(new THREE.Vector3(
-            (Math.random() - 0.5) * 5.6,
-            (Math.random() - 0.5) * 3.4,
-            (Math.random() - 0.5) * 4.8
-        ));
-    }
-    return p;
-  }, []);
-
-  const ref = useRef<THREE.Group>(null!);
-
-  useFrame((state) => {
-    if (!ref.current) return;
-    ref.current.rotation.y += 0.05;
-    ref.current.rotation.z += 0.03;
-  });
-
-  return (
-    <group ref={ref}>
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[2.25, 0.035, 10, 64]} />
-        <meshBasicMaterial color="#38bdf8" transparent opacity={0.28} blending={THREE.AdditiveBlending} depthWrite={false} />
-      </mesh>
-      <mesh rotation={[0, Math.PI / 2, 0]}>
-        <torusGeometry args={[1.65, 0.025, 10, 48]} />
-        <meshBasicMaterial color="#60a5fa" transparent opacity={0.2} blending={THREE.AdditiveBlending} depthWrite={false} />
-      </mesh>
-      {points.map((p, i) => (
-        <mesh key={i} position={p}>
-          <sphereGeometry args={[0.06]} />
-          <meshBasicMaterial color={i % 2 ? '#38bdf8' : '#bfdbfe'} transparent opacity={0.65} />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
-function JetpackFlames() {
-    const ref = useRef<THREE.Group>(null!);
-    useFrame((state) => {
-        if (!ref.current) return;
-        ref.current.scale.y = 0.8 + Math.random() * 0.4;
-    });
-    return (
-        <group ref={ref} position={[0, -0.85, 0.18]}>
-            <mesh position={[-0.25, 0, 0]}>
-                <cylinderGeometry args={[0.05, 0.2, 0.8, 8]} />
-                <meshBasicMaterial color="#fb7185" transparent opacity={0.9} blending={THREE.AdditiveBlending} />
-            </mesh>
-            <mesh position={[0.25, 0, 0]}>
-                <cylinderGeometry args={[0.05, 0.2, 0.8, 8]} />
-                <meshBasicMaterial color="#f97316" transparent opacity={0.9} blending={THREE.AdditiveBlending} />
-            </mesh>
-            <pointLight color="#fb7185" intensity={1.4} distance={4} />
-        </group>
-    );
-}
-
-function SneakersFootGlow() {
-  const ref = useRef<THREE.Group>(null!);
+function MagnetEffect() {
+  const ringRef = useRef<THREE.Mesh>(null!);
+  const particles = useMemo(() => Array.from({ length: 8 }, () => ({
+    speed: 1.5 + Math.random(),
+    offset: Math.random() * Math.PI * 2
+  })), []);
+  const particleRefs = useRef<THREE.Mesh[]>([]);
 
   useFrame(({ clock }) => {
-    if (!ref.current) return;
-    const pulse = 1 + Math.sin(clock.elapsedTime * 10) * 0.08;
-    ref.current.scale.setScalar(pulse);
+    if (ringRef.current) {
+      ringRef.current.rotation.z = clock.elapsedTime * 2.5; // Smooth spin
+    }
+
+    particles.forEach((p, i) => {
+      const mesh = particleRefs.current[i];
+      if (!mesh) return;
+      const t = clock.elapsedTime * p.speed + p.offset;
+      mesh.position.set(
+        Math.cos(t) * 1.3,
+        Math.sin(t * 0.5) * 0.2 - 0.2, // Swirling slightly below/above the hip
+        Math.sin(t) * 1.3
+      );
+      mesh.scale.setScalar(0.4 + Math.sin(t * 3) * 0.15);
+    });
   });
 
   return (
-    <group ref={ref} position={[0, -0.86, 0]}>
-      {[-0.27, 0.27].map(x => (
-        <mesh key={x} position={[x, 0, 0.08]} rotation={[Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[0.26, 0.43, 32]} />
-          <meshBasicMaterial color="#34d399" side={THREE.DoubleSide} transparent opacity={0.62} blending={THREE.AdditiveBlending} />
+    <group position={[0, -0.2, 0]}> {/* Adjusted to sit at hip height */}
+      {/* Single Horizontal Golden Ring */}
+      <mesh ref={ringRef} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[1.35, 0.025, 8, 48]} />
+        <meshBasicMaterial color="#fbbf24" transparent opacity={0.45} blending={THREE.AdditiveBlending} />
+      </mesh>
+
+      {/* Subtle Sparkles clinging to the orbit */}
+      {particles.map((p, i) => (
+        <mesh key={i} ref={el => particleRefs.current[i] = el!}>
+          <sphereGeometry args={[0.07, 6, 6]} />
+          <meshBasicMaterial color="#fcd34d" transparent opacity={0.7} blending={THREE.AdditiveBlending} />
         </mesh>
       ))}
-      <pointLight color="#34d399" intensity={0.9} distance={3} />
     </group>
   );
 }
 
-function MultiplierAura() {
+function JetpackTrail() {
   const ref = useRef<THREE.Group>(null!);
-
-  useFrame(() => {
+  useFrame((state) => {
     if (!ref.current) return;
-    ref.current.rotation.y += 0.045;
+    ref.current.scale.y = 0.8 + Math.random() * 0.4;
+  });
+  return (
+    <group ref={ref} position={[0, -0.85, 0.18]}>
+      <mesh position={[-0.25, 0, 0]}>
+        <cylinderGeometry args={[0.05, 0.18, 0.8, 8]} />
+        <meshBasicMaterial color="#fb7185" transparent opacity={0.85} blending={THREE.AdditiveBlending} />
+      </mesh>
+      <mesh position={[0.25, 0, 0]}>
+        <cylinderGeometry args={[0.05, 0.18, 0.8, 8]} />
+        <meshBasicMaterial color="#f97316" transparent opacity={0.85} blending={THREE.AdditiveBlending} />
+      </mesh>
+      <pointLight color="#fb7185" intensity={1.5} distance={4} />
+    </group>
+  );
+}
+
+function SneakersEffect() {
+  const ref = useRef<THREE.Group>(null!);
+  useFrame(({ clock }) => {
+    if (!ref.current) return;
+    ref.current.children.forEach((c, i) => {
+      const pulse = 0.8 + Math.sin(clock.elapsedTime * 8 + i) * 0.2;
+      c.scale.setScalar(pulse);
+    });
   });
 
   return (
-    <group ref={ref} position={[0, 1.2, 0]}>
-      <mesh>
-        <torusKnotGeometry args={[0.34, 0.045, 72, 8]} />
-        <meshBasicMaterial color="#fbbf24" transparent opacity={0.78} blending={THREE.AdditiveBlending} />
-      </mesh>
-      <mesh position={[0, 0.02, 0]}>
-        <sphereGeometry args={[0.18, 12, 10]} />
-        <meshBasicMaterial color="#fde68a" transparent opacity={0.42} />
-      </mesh>
+    <group ref={ref} position={[0, -0.95, 0]}>
+      {[-0.3, 0.3].map((x, i) => (
+        <mesh key={i} position={[x, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[0.4, 16]} />
+          <meshBasicMaterial color="#10b981" transparent opacity={0.25} blending={THREE.AdditiveBlending} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function MultiplierEffect() {
+  const particles = useMemo(() => Array.from({ length: 15 }, () => ({
+    pos: new THREE.Vector3((Math.random() - 0.5) * 1.5, Math.random() * 2, (Math.random() - 0.5) * 1.5),
+    speed: 0.5 + Math.random()
+  })), []);
+  const refs = useRef<THREE.Mesh[]>([]);
+
+  useFrame(({ clock }) => {
+    particles.forEach((p, i) => {
+      const mesh = refs.current[i];
+      if (!mesh) return;
+      mesh.position.y = (p.pos.y + clock.elapsedTime * p.speed) % 2.5;
+      mesh.scale.setScalar(0.5 + Math.sin(clock.elapsedTime * 5 + i) * 0.5);
+      mesh.material.opacity = 0.3 + Math.sin(clock.elapsedTime * 4 + i) * 0.3;
+    });
+  });
+
+  return (
+    <group position={[0, -0.5, 0]}>
+      {particles.map((p, i) => (
+        <mesh key={i} ref={el => refs.current[i] = el!} position={[p.pos.x, 0, p.pos.z]}>
+          <sphereGeometry args={[0.07, 6, 6]} />
+          <meshBasicMaterial color="#fbbf24" transparent opacity={0.5} blending={THREE.AdditiveBlending} />
+        </mesh>
+      ))}
     </group>
   );
 }
 
 export default function PowerupEffects() {
   const activePowerups = useGameStore(s => s.activePowerups);
-  
-  // We need to follow the player. 
-  // In our architecture, the world moves, player stays at Z=0.
-  // We can just render this at the player's world position.
-
   const groupRef = useRef<THREE.Group>(null!);
 
   useFrame(() => {
     if (!groupRef.current) return;
-    groupRef.current.position.x = THREE.MathUtils.lerp(groupRef.current.position.x, playerXRef.current, 0.24);
+    groupRef.current.position.x = playerXRef.current;
     groupRef.current.position.y = jumpYRef.current + 1.0;
   });
 
   return (
     <group ref={groupRef}>
-      {activePowerups.has('magnet') && <MagnetTrail />}
-      {activePowerups.has('jetpack') && <JetpackFlames />}
-      
-      {activePowerups.has('sneakers') && <SneakersFootGlow />}
-      {activePowerups.has('multiplier') && <MultiplierAura />}
+      {activePowerups.has('magnet') && <MagnetEffect />}
+      {activePowerups.has('jetpack') && <JetpackTrail />}
+      {activePowerups.has('sneakers') && <SneakersEffect />}
+      {activePowerups.has('multiplier') && <MultiplierEffect />}
     </group>
   );
 }

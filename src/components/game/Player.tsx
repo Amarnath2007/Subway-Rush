@@ -174,7 +174,13 @@ export default function Player() {
       if (isJetpackLanding.current) {
         // Smooth controlled landing glide
         jumpYRef.current = THREE.MathUtils.lerp(jumpYRef.current, 0, JETPACK_LANDING_SPEED);
-        if (jumpYRef.current < 0.05) { 
+        
+        // ALLOW JUMPING DURING LANDING: If player presses jump while landing, interrupt landing
+        if (state.isJumping) {
+          isJetpackLanding.current = false;
+          isJumpPhysicsActive.current = true;
+          jumpVelRef.current = JUMP_FORCE * (state.activePowerups.has('sneakers') ? SNEAKERS_JUMP_MULTIPLIER : 1.0);
+        } else if (jumpYRef.current < 0.05) { 
           jumpYRef.current = 0; 
           isJetpackLanding.current = false; 
           state.setJumping(false); 
@@ -210,7 +216,7 @@ export default function Player() {
     // --- Collision V3.2: Absolute No-Penetration Logic ---
     const now = performance.now();
     if (now - lastHitTime.current < 500) return;
-    const isImmune = state.isJetpackActive || (isJetpackLanding.current && jumpYRef.current > JETPACK_LANDING_IMMUNITY_HEIGHT);
+    const isImmune = state.isJetpackActive || state.reviveSafetyTime > 0 || (isJetpackLanding.current && jumpYRef.current > JETPACK_LANDING_IMMUNITY_HEIGHT);
     const px = laneXRef.current;
     const py = jumpYRef.current;
 

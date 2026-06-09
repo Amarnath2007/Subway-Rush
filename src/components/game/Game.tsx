@@ -23,6 +23,7 @@ import PowerupHUD     from '../ui/PowerupHUD';
 import PauseMenu      from '../ui/PauseMenu';
 import GameOver       from '../ui/GameOver';
 import CoinFX         from '../effects/CoinFX';
+import ReviveEffect   from '../effects/ReviveEffect';
 import DebugOverlay  from '../ui/DebugOverlay';
 import ErrorDebugger from '../ui/ErrorDebugger';
 
@@ -89,7 +90,7 @@ export default function Game() {
       </Canvas>
 
       {gameState === 'menu'     && <MainMenu />}
-      {gameState === 'playing'  && <><HUD /><PowerupHUD /><CoinFX /></>}
+      {gameState === 'playing'  && <><HUD /><PowerupHUD /><CoinFX /><ReviveEffect /></>}
       {gameState === 'paused'   && <PauseMenu />}
       {gameState === 'gameover' && <GameOver />}
       

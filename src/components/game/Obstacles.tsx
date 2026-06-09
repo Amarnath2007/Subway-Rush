@@ -26,6 +26,7 @@ function toItem(obs: ObstacleData): InstancedModelItem {
   if (obs.type === 'up') {
     return {
       ...base,
+      rotationY: Math.PI,
       scale: [1.0, 1, 1.5],  // slightly tighter to match collision
     };
   }

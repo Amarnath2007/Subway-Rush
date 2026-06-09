@@ -40,14 +40,17 @@ export interface ChunkData {
 }
 
 export type EnvPropType =
-  | 'building1'
-  | 'building2'
-  | 'tree'
+  | 'building1' | 'building2' | 'building3'
+  | 'tree1' | 'tree2'
   | 'fence'
-  | 'streetlight'
+  | 'streetlight' | 'streetlight_fancy'
   | 'bench'
   | 'trashbin'
-  | 'sign'
+  | 'mailbox'
+  | 'bush' | 'bush_large'
+  | 'planter'
+  | 'bus_stop'
+  | 'signboard'
   | 'grass';
 
 export interface EnvProp {

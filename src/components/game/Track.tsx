@@ -5,8 +5,8 @@ import { CHUNK_LENGTH, CHUNKS_AHEAD, CHUNKS_BEHIND, LANE_POSITIONS } from '../..
 import { useGameStore, worldZRef } from '../../store/gameStore';
 
 const TRACK_WIDTH = 11.5;
-const PAVEMENT_WIDTH = 60.0;
-const SIDEWALK_WIDTH = 4.5;
+const PAVEMENT_WIDTH = 280.0;
+const SIDEWALK_WIDTH = 8.5;
 const SIDEWALK_X = TRACK_WIDTH / 2 + SIDEWALK_WIDTH / 2;
 const SLEEPER_SPACING = 1.45;
 const SLEEPERS_PER_CHUNK = Math.ceil(CHUNK_LENGTH / SLEEPER_SPACING);

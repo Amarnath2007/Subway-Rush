@@ -128,6 +128,11 @@ interface GameStore extends SaveData {
   crashVersion: number;
   reviveUsed: boolean;
 
+  // Revive polish state
+  reviveSlowMo: number;
+  reviveSafetyTime: number;
+  reviveBoom: boolean;
+
   // Actions
   startGame: () => void;
   pauseGame: () => void;
@@ -224,6 +229,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       isGameOverPending: false,
       crashVersion: 0,
       reviveUsed: false,
+      reviveSlowMo: 0,
+      reviveSafetyTime: 0,
+      reviveBoom: false,
     });
   },
 
@@ -283,9 +291,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
       isGameOverPending: false,
       gameState: 'playing',
       playerAction: 'run',
-      speed: Math.max(INITIAL_SPEED, get().speed * 0.7), // soften speed on revive
-      crashVersion: crashVersion + 1, // cancel pending gameover
+      speed: Math.max(INITIAL_SPEED, get().speed * 0.75), // soften speed
+      crashVersion: crashVersion + 1,
+      reviveSlowMo: 1.2,    // 1.2s of slow motion
+      reviveSafetyTime: 4.0, // 4s of immunity
+      reviveBoom: true,
     });
+    
+    // Clear obstacles in current and next few chunks to ensure a path
+    const { chunks } = get();
+    const safeChunks = chunks.map(c => ({
+      ...c,
+      obstacles: c.obstacles.filter(o => (o.z + worldZRef.current) > 40) // only keep far ones
+    }));
+    set({ chunks: safeChunks });
     
     // reset runtime speed
     runtime.speed = get().speed;
@@ -300,8 +319,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setSliding: (v) => set({ isSliding: v }),
 
   tick: (delta: number) => {
-    const { gameState, activePowerups, isGameOverPending } = get();
+    const { gameState, activePowerups, isGameOverPending, reviveSlowMo, reviveSafetyTime } = get();
     if (gameState !== 'playing' || isGameOverPending) return;
+
+    // Apply slow-mo scaling
+    const timeScale = reviveSlowMo > 0 ? 0.35 : 1.0;
+    const scaledDelta = delta * timeScale;
 
     qualityManager.trackFrame();
 
@@ -309,7 +332,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const nextPowerups = new Map(activePowerups);
     
     nextPowerups.forEach((p, type) => {
-      p.remaining -= delta;
+      p.remaining -= scaledDelta;
       if (p.remaining <= 0) {
         nextPowerups.delete(type);
         powerupsChanged = true;
@@ -325,11 +348,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
 
     const speedForFrame = runtime.speed;
-    runtime.speed = Math.min(runtime.speed + SPEED_INCREMENT_PER_SEC * delta, MAX_SPEED);
-    runtime.distance += speedForFrame * delta;
+    
+    // Smooth, dampened speed progression
+    const speedProgress = (runtime.speed - INITIAL_SPEED) / (MAX_SPEED - INITIAL_SPEED);
+    const dampenedIncrement = SPEED_INCREMENT_PER_SEC * (1 - Math.min(0.6, speedProgress * 0.8));
+    runtime.speed = Math.min(runtime.speed + dampenedIncrement * scaledDelta, MAX_SPEED);
+    
+    runtime.distance += speedForFrame * scaledDelta;
     const scoreMultiplier = nextPowerups.has('multiplier') ? 2 : 1;
-    runtime.score += SCORE_PER_SECOND * speedForFrame * delta * scoreMultiplier;
-    worldZRef.current += speedForFrame * delta;
+    runtime.score += SCORE_PER_SECOND * speedForFrame * scaledDelta * scoreMultiplier;
+    worldZRef.current += speedForFrame * scaledDelta;
+
+    // Update Revive Timers
+    const nextSlowMo = Math.max(0, reviveSlowMo - delta);
+    const nextSafety = Math.max(0, reviveSafetyTime - scaledDelta);
 
     if (isJetpackActive && get().playerAction !== 'fly') {
       set({ playerAction: 'fly' });
@@ -338,7 +370,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
 
     const now = performance.now();
-    if (now - runtime.lastUiSync > 90 || powerupsChanged) {
+    if (now - runtime.lastUiSync > 90 || powerupsChanged || (reviveSlowMo > 0 && nextSlowMo === 0)) {
       runtime.lastUiSync = now;
       set({
         speed: runtime.speed,
@@ -348,6 +380,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
         activePowerups: nextPowerups,
         isJetpackActive,
         qualityTier: qualityManager.tier,
+        reviveSlowMo: nextSlowMo,
+        reviveSafetyTime: nextSafety,
+        reviveBoom: nextSlowMo > 0.7, // Only show boom for first 0.5s (1.2 - 0.7 = 0.5)
       });
     }
   },
