@@ -30,13 +30,19 @@ export const CHUNKS_BEHIND = 3;
 export const COIN_SCORE = 50;
 export const SCORE_PER_SECOND = 1;
 
-// Camera tuning — V3.1 Cinematic Flight
-export const BASE_FOV = 57;
-export const MAX_FOV_SPEED = 72;
-export const JETPACK_FOV_BOOST = 15;
-export const CAMERA_JETPACK_PULLBACK = 6.0;
-export const CAMERA_JETPACK_HEIGHT = 8.5;
-export const CAMERA_JETPACK_LOOK_DOWN = 6.0;
+// Camera tuning — Subway Surfers Authentic Feel
+export const CAMERA_DISTANCE = 6.0;
+export const CAMERA_HEIGHT = 2.9;
+export const CAMERA_PITCH = 16.5; // Degrees
+export const BASE_FOV = 62;
+export const MAX_FOV_SPEED = 78;
+export const JETPACK_FOV_BOOST = 12;
+export const FOLLOW_SMOOTHNESS = 0.12; // Lerp factor for follow
+export const LANE_SMOOTHNESS = 0.15; // Lerp factor for lane switching
+
+export const CAMERA_JETPACK_PULLBACK = 5.0;
+export const CAMERA_JETPACK_HEIGHT = 7.5;
+export const CAMERA_JETPACK_LOOK_DOWN = 5.0;
 
 // Collider dimensions.
 export const PLAYER_COLLIDER = { hw: 0.45, hh: 1.05, hd: 0.4 };
@@ -47,7 +53,7 @@ export const COIN_COLLECT_RADIUS = 1.35;
 export const TARGET_PLAYER_HEIGHT = 2.1;
 export const TARGET_TREE_HEIGHT = 7.0;
 export const TARGET_BUILDING_HEIGHT = 20.0;
-export const TARGET_UP_OBS_HEIGHT = 2.2;
+export const TARGET_UP_OBS_HEIGHT = 1.65;
 export const TARGET_DOWN_OBS_HEIGHT = 2.35;
 export const TARGET_TRAIN_HEIGHT = 4.4;
 export const TARGET_COIN_SIZE = 0.68;
@@ -81,8 +87,8 @@ export const JETPACK_LANDING_SPEED = 0.085;
 export const JETPACK_LANDING_IMMUNITY_HEIGHT = 3.0;
 
 // Obstacle collision tuning 
-export const OBS_UP_DX = 1.1;
-export const OBS_UP_PY = 2.1;
+export const OBS_UP_DX = 0.82;
+export const OBS_UP_PY = 1.6;
 export const OBS_DOWN_DX = 1.1;
 export const OBS_TRAIN_DX = 1.45;
 export const OBS_TRAIN_PY = 4.0;

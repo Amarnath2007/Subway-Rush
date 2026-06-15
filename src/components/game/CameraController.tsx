@@ -11,22 +11,36 @@ import {
   JETPACK_FOV_BOOST,
   CAMERA_JETPACK_PULLBACK,
   CAMERA_JETPACK_HEIGHT,
-  CAMERA_JETPACK_LOOK_DOWN
+  CAMERA_JETPACK_LOOK_DOWN,
+  CAMERA_DISTANCE,
+  CAMERA_HEIGHT,
+  CAMERA_PITCH,
+  FOLLOW_SMOOTHNESS,
+  LANE_SMOOTHNESS
 } from '../../config/constants';
 import { useGameStore, jumpYRef } from '../../store/gameStore';
 
-const FOLLOW_OFFSET = new THREE.Vector3(0, 4.15, 8.15);
-const LOOK_OFFSET = new THREE.Vector3(0, 1.25, -3.2);
+// --- Subway Surfers (Normal) Configuration ---
+const FOLLOW_OFFSET_SS = new THREE.Vector3(0, CAMERA_HEIGHT, CAMERA_DISTANCE);
+const LOOK_DISTANCE_SS = 25; 
+const LOOK_Y_OFFSET_SS = CAMERA_HEIGHT - Math.tan(CAMERA_PITCH * Math.PI / 180) * LOOK_DISTANCE_SS;
+const LOOK_OFFSET_SS = new THREE.Vector3(0, LOOK_Y_OFFSET_SS, -LOOK_DISTANCE_SS);
+
+// --- Original Cinematic (Jetpack) Configuration ---
+const FOLLOW_OFFSET_OLD = new THREE.Vector3(0, 4.15, 8.15);
+const LOOK_OFFSET_OLD = new THREE.Vector3(0, 1.25, -3.2);
+const JETPACK_PULLBACK_OLD = 6.0;
+const JETPACK_HEIGHT_OLD = 8.5;
+const JETPACK_LOOK_DOWN_OLD = 6.0;
+const JETPACK_FOV_BOOST_OLD = 15;
 
 export default function CameraController() {
   const { camera, size } = useThree();
-  const currentPos = useRef(new THREE.Vector3(0, FOLLOW_OFFSET.y, FOLLOW_OFFSET.z));
-  const currentLook = useRef(new THREE.Vector3(0, LOOK_OFFSET.y, LOOK_OFFSET.z));
-  const desiredPos = useRef(new THREE.Vector3());
+  const currentPos = useRef(new THREE.Vector3(0, FOLLOW_OFFSET_SS.y, FOLLOW_OFFSET_SS.z));
+  const currentLook = useRef(new THREE.Vector3(0, LOOK_OFFSET_SS.y, LOOK_OFFSET_SS.z));
+  const desiredPos = useRef(new THREE.Vector3(0, FOLLOW_OFFSET_SS.y, FOLLOW_OFFSET_SS.z));
   const desiredLook = useRef(new THREE.Vector3());
   const smoothedLaneX = useRef(0);
-  const crashShake = useRef(0);
-  const prevCrashVersion = useRef(0);
 
   useEffect(() => {
     if (camera instanceof THREE.PerspectiveCamera) {
@@ -41,19 +55,14 @@ export default function CameraController() {
     const state = useGameStore.getState();
     const { gameState, targetLane, isWarning, speed, isJetpackActive, crashVersion } = state;
     
-    const followT = 1 - Math.pow(1 - 0.095, delta * 60);
-    const laneT = 1 - Math.pow(1 - 0.18, delta * 60);
+    const followT = 1 - Math.pow(1 - FOLLOW_SMOOTHNESS, delta * 60);
+    const laneT = 1 - Math.pow(1 - LANE_SMOOTHNESS, delta * 60);
     const speedNorm = (speed - INITIAL_SPEED) / (MAX_SPEED - INITIAL_SPEED);
-
-    if (crashVersion !== prevCrashVersion.current) {
-      prevCrashVersion.current = crashVersion;
-      crashShake.current = Math.max(crashShake.current, 1.7);
-    }
 
     if (camera instanceof THREE.PerspectiveCamera) {
       let fovTarget = THREE.MathUtils.lerp(BASE_FOV, MAX_FOV_SPEED, speedNorm);
       if (isJetpackActive) {
-        fovTarget += JETPACK_FOV_BOOST;
+        fovTarget += JETPACK_FOV_BOOST_OLD;
       }
       camera.fov = THREE.MathUtils.lerp(camera.fov, fovTarget, 0.06);
       camera.updateProjectionMatrix();
@@ -66,58 +75,66 @@ export default function CameraController() {
 
       const jumpY = jumpYRef.current;
       const aspect = size.width / Math.max(1, size.height);
-      const portraitBias = Math.max(0, 1.0 - aspect); // Stronger bias for portrait
+      const portraitBias = Math.max(0, 1.0 - aspect); 
       const speedPullback = Math.min(2.5, Math.max(0, speed - INITIAL_SPEED) * 0.15);
-      
       const altitudeT = Math.min(1, jumpY / JETPACK_HEIGHT);
       
-      // V3.1 Cinematic Flight: Higher, tilted down, and pulled back
-      const jetpackPullback = altitudeT * CAMERA_JETPACK_PULLBACK;
-      const jetpackHeightAdd = altitudeT * CAMERA_JETPACK_HEIGHT;
-      const jetpackLookDown = altitudeT * CAMERA_JETPACK_LOOK_DOWN;
+      if (isJetpackActive) {
+        // --- RESTORED ORIGINAL JETPACK CAMERA LOGIC ---
+        const jetpackPullback = altitudeT * JETPACK_PULLBACK_OLD;
+        const jetpackHeightAdd = altitudeT * JETPACK_HEIGHT_OLD;
+        const jetpackLookDown = altitudeT * JETPACK_LOOK_DOWN_OLD;
 
-      const followY = FOLLOW_OFFSET.y + portraitBias * 2.0 + jetpackHeightAdd;
-      const followZ = FOLLOW_OFFSET.z + speedPullback + portraitBias * 12.0 + jetpackPullback;
-      
-      // Look target moves FURTHER AHEAD but also stays LOWER on tracks for the "downward" look
-      const lookY = LOOK_OFFSET.y - portraitBias * 0.5 - jetpackLookDown;
-      const lookZ = LOOK_OFFSET.z - portraitBias * 1.5 - altitudeT * 12.0;
+        const followY = FOLLOW_OFFSET_OLD.y + portraitBias * 2.0 + jetpackHeightAdd;
+        const followZ = FOLLOW_OFFSET_OLD.z + speedPullback + portraitBias * 12.0 + jetpackPullback;
+        const lookY = LOOK_OFFSET_OLD.y - portraitBias * 0.5 - jetpackLookDown;
+        const lookZ = LOOK_OFFSET_OLD.z - portraitBias * 1.5 - altitudeT * 12.0;
 
-      desiredPos.current.set(
-        smoothedLaneX.current * (isJetpackActive ? 0.35 : 0.5), 
-        followY + (isJetpackActive ? jumpY * 0.5 : jumpY * 0.22),
-        followZ
-      );
-      
-      desiredLook.current.set(
-        smoothedLaneX.current * 0.8,
-        lookY + (isJetpackActive ? jumpY * 0.15 : jumpY * 0.36), // Keep look target closer to ground
-        lookZ
-      );
+        desiredPos.current.set(
+          smoothedLaneX.current * 0.35, 
+          followY + jumpY * 0.5,        
+          followZ
+        );
+        
+        desiredLook.current.set(
+          smoothedLaneX.current * 0.8,
+          lookY + jumpY * 0.15, 
+          lookZ
+        );
+      } else {
+        // --- NEW SUBWAY SURFERS RUNNING CAMERA ---
+        const { isSliding } = state;
+        const slideDip = isSliding ? -0.45 : 0;
+        
+        const followY = FOLLOW_OFFSET_SS.y + portraitBias * 1.5 + jumpY + slideDip;
+        const followZ = FOLLOW_OFFSET_SS.z + speedPullback + portraitBias * 4.0;
+        
+        const lookY = LOOK_OFFSET_SS.y - portraitBias * 2.0 + jumpY + slideDip;
+        const lookZ = LOOK_OFFSET_SS.z - portraitBias * 5.0;
+
+        desiredPos.current.set(
+          smoothedLaneX.current, 
+          followY,
+          followZ
+        );
+        
+        desiredLook.current.set(
+          smoothedLaneX.current,
+          lookY, 
+          lookZ
+        );
+      }
 
       currentPos.current.lerp(desiredPos.current, followT);
       currentLook.current.lerp(desiredLook.current, followT);
       camera.position.copy(currentPos.current);
 
-      if (crashShake.current > 0) {
-        crashShake.current = Math.max(0, crashShake.current - delta * 7);
-        const amp = crashShake.current * 0.18;
-        camera.position.x += (Math.random() - 0.5) * amp;
-        camera.position.y += (Math.random() - 0.5) * amp;
-      } else if (isWarning) {
-        camera.position.x += Math.sin(clock.elapsedTime * 42) * 0.045;
-      }
-
-      // Speed/Flight wobble
-      const wobbleFreq = isJetpackActive ? 15 : 12;
-      const wobbleAmp = isJetpackActive ? 0.04 : 0.02;
-      camera.position.y += Math.sin(clock.elapsedTime * wobbleFreq) * speedNorm * wobbleAmp;
+      camera.position.copy(currentPos.current);
 
       // Lane tilt
       const velX = (smoothedLaneX.current - prevSmoothedX) / delta;
       const tiltTarget = -velX * 0.005 + (targetLane * -0.012);
-      camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, tiltTarget, 0.12);
-      
+      camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, tiltTarget, 0.1);
       camera.lookAt(currentLook.current);
     } else if (gameState === 'menu') {
       const t = clock.elapsedTime * 0.45;
