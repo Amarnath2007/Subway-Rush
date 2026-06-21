@@ -122,7 +122,7 @@ export const CHARACTERS: CharacterConfig[] = [
   { id: 'Amy', name: 'Amy', rarity: 'Rare', costCoins: 2000, costDiamonds: 20, modelPath: '/assets/runner/runner/characters/Amy.fbx', scaleOverride: 1.0, yOffset: 0.05 },
   { id: 'Claire', name: 'Claire', rarity: 'Epic', costCoins: 4000, costDiamonds: 40, modelPath: '/assets/runner/runner/characters/claire.fbx', scaleOverride: 1.0, yOffset: 0.05 },
   { id: 'Mousey', name: 'Mousey', rarity: 'Epic', costCoins: 7000, costDiamonds: 70, modelPath: '/assets/runner/runner/characters/mousey.fbx', scaleOverride: 0.80, yOffset: 0.08 },
-  { id: 'Knight', name: 'Knight', rarity: 'Legendary', costCoins: 10000, costDiamonds: 100, modelPath: '/assets/runner/runner/characters/Knight.fbx', scaleOverride: 1.3, yOffset: 0.75 },
+  { id: 'Knight', name: 'Knight', rarity: 'Legendary', costCoins: 10000, costDiamonds: 100, modelPath: '/assets/runner/runner/characters/Knight.fbx', scaleOverride: 1.12, yOffset: 0.65 },
 ];
 
 export const POWERUP_UPGRADE_COSTS = [0, 500, 1000, 2000, 4000];

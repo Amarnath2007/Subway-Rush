@@ -5,9 +5,10 @@ interface BottomMenuProps {
   onOpenAchievements: () => void;
   onOpenCharacters: () => void;
   onOpenShop: () => void;
+  onOpenSettings: () => void;
 }
 
-export default function BottomMenu({ onOpenAchievements, onOpenCharacters, onOpenShop }: BottomMenuProps) {
+export default function BottomMenu({ onOpenAchievements, onOpenCharacters, onOpenShop, onOpenSettings }: BottomMenuProps) {
   const btnStyle: React.CSSProperties = {
     flex: 1,
     display: 'flex',
@@ -69,6 +70,16 @@ export default function BottomMenu({ onOpenAchievements, onOpenCharacters, onOpe
       >
         <span style={{ fontSize: '24px' }}>🛒</span>
         <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Shop</span>
+      </button>
+
+      <button 
+        style={btnStyle} 
+        onClick={onOpenSettings}
+        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateY(-4px)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.transform = 'translateY(0)'; }}
+      >
+        <span style={{ fontSize: '24px' }}>⚙️</span>
+        <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Settings</span>
       </button>
     </div>
   );

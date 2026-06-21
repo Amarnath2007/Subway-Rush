@@ -5,10 +5,11 @@ import BottomMenu from './BottomMenu';
 import AchievementsModal from './AchievementsModal';
 import CharactersModal from './CharactersModal';
 import ShopModal from './ShopModal';
+import SettingsModal from './SettingsModal';
 
 export default function MainMenu() {
   const { bestScore, totalCoins, diamonds } = useGameStore();
-  const [activeModal, setActiveModal] = useState<'none' | 'achievements' | 'characters' | 'shop'>('none');
+  const [activeModal, setActiveModal] = useState<'none' | 'achievements' | 'characters' | 'shop' | 'settings'>('none');
   
   const titleRef = useRef<HTMLDivElement>(null);
 
@@ -117,12 +118,14 @@ export default function MainMenu() {
         onOpenAchievements={() => setActiveModal('achievements')}
         onOpenCharacters={() => setActiveModal('characters')}
         onOpenShop={() => setActiveModal('shop')}
+        onOpenSettings={() => setActiveModal('settings')}
       />
 
       {/* Modals */}
       {activeModal === 'achievements' && <AchievementsModal onClose={() => setActiveModal('none')} />}
       {activeModal === 'characters' && <CharactersModal onClose={() => setActiveModal('none')} />}
       {activeModal === 'shop' && <ShopModal onClose={() => setActiveModal('none')} />}
+      {activeModal === 'settings' && <SettingsModal onClose={() => setActiveModal('none')} />}
 
       <style>{`
         @keyframes blink {

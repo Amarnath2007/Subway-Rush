@@ -102,10 +102,14 @@ function FBXCharacter() {
   const { actions, mixer } = useAnimations(clips, model);
   const cur = useRef('');
   useEffect(() => {
-    if (!actions) return;
+    if (!actions || !mixer) return;
     const next = gameState === 'menu' ? 'idle' : playerAction;
+    
     if (next === cur.current) return;
-    const p = actions[cur.current]; const n = actions[next] || actions['run'];
+    
+    const p = actions[cur.current]; 
+    const n = actions[next] || actions['run'];
+    
     if (n) {
       if (p) p.fadeOut(0.2);
       n.reset().setEffectiveWeight(1).fadeIn(0.2).play();
@@ -114,7 +118,7 @@ function FBXCharacter() {
       if (/jump|slide|hit/.test(next)) { n.setLoop(THREE.LoopOnce, 1); n.clampWhenFinished = true; }
       cur.current = next;
     }
-  }, [playerAction, gameState, actions]);
+  }, [playerAction, gameState, actions, mixer]);
   useEffect(() => {
     if (!mixer) return;
     const f = (e: any) => { if (/jump|slide/.test(e.action.getClip().name)) {
@@ -270,7 +274,7 @@ export default function Player() {
   return (
     <group ref={groupRef}>
       <ModelErrorBoundary fallback={<FallbackCharacter isSliding={useGameStore.getState().isSliding} />}>
-        <FBXCharacter />
+        <FBXCharacter key={useGameStore.getState().selectedCharacter} />
       </ModelErrorBoundary>
     </group>
   );

@@ -12,6 +12,16 @@ interface ToneOptions {
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
+const AUDIO_SAVE_KEY = 'subway_rush_audio_v1';
+
+interface AudioSettings {
+  masterVolume: number;
+  musicVolume: number;
+  sfxVolume: number;
+  musicEnabled: boolean;
+  sfxEnabled: boolean;
+}
+
 class SoundManager {
   private audioCtx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
@@ -19,17 +29,52 @@ class SoundManager {
   private sfxGain: GainNode | null = null;
   private ambientGain: GainNode | null = null;
   
-  private musicTimer: ReturnType<typeof setInterval> | null = null;
-  private musicSources: SourceSet = new Set();
+  private bgm: HTMLAudioElement | null = null;
+  private bgmSource: MediaElementAudioSourceNode | null = null;
+  
   private sfxSources: SourceSet = new Set();
   private lastSfx = new Map<string, number>();
-  private musicStep = 0;
   
   private masterVolume = 0.85;
-  private musicVolume = 0.38;
-  private sfxVolume = 0.72;
+  private musicVolume = 0.45;
+  private sfxVolume = 0.75;
   private musicEnabled = true;
   private sfxEnabled = true;
+
+  constructor() {
+    this.loadSettings();
+  }
+
+  private loadSettings() {
+    try {
+      const saved = localStorage.getItem(AUDIO_SAVE_KEY);
+      if (saved) {
+        const settings: AudioSettings = JSON.parse(saved);
+        this.masterVolume = settings.masterVolume ?? 0.85;
+        this.musicVolume = settings.musicVolume ?? 0.45;
+        this.sfxVolume = settings.sfxVolume ?? 0.75;
+        this.musicEnabled = settings.musicEnabled ?? true;
+        this.sfxEnabled = settings.sfxEnabled ?? true;
+      }
+    } catch (e) {
+      console.warn('Failed to load audio settings', e);
+    }
+  }
+
+  private saveSettings() {
+    try {
+      const settings: AudioSettings = {
+        masterVolume: this.masterVolume,
+        musicVolume: this.musicVolume,
+        sfxVolume: this.sfxVolume,
+        musicEnabled: this.musicEnabled,
+        sfxEnabled: this.sfxEnabled,
+      };
+      localStorage.setItem(AUDIO_SAVE_KEY, JSON.stringify(settings));
+    } catch (e) {
+      console.warn('Failed to save audio settings', e);
+    }
+  }
 
   private getCtx(): AudioContext {
     if (!this.audioCtx) {
@@ -47,8 +92,19 @@ class SoundManager {
       
       this.applyVolumes();
       this.startAmbient();
+      this.initBGM();
     }
     return this.audioCtx;
+  }
+
+  private initBGM() {
+    if (!this.bgm && this.audioCtx && this.musicGain) {
+      this.bgm = new Audio('/assets/BGM- mfcc-retro-arcade-game-music-297305.mp3');
+      this.bgm.loop = true;
+      this.bgm.crossOrigin = 'anonymous';
+      this.bgmSource = this.audioCtx.createMediaElementSource(this.bgm);
+      this.bgmSource.connect(this.musicGain);
+    }
   }
 
   unlock() {
@@ -128,51 +184,23 @@ class SoundManager {
 
     osc.connect(gain);
     gain.connect(destination);
-    this.register(osc, destination === this.musicGain ? this.musicSources : this.sfxSources);
+    this.register(osc, this.sfxSources);
     osc.start(start);
     osc.stop(start + duration + release * 3);
   }
 
   startBGMusic() {
-    if (!this.musicEnabled || this.musicTimer) return;
     this.resume();
-    this.scheduleMusicPhrase();
-    this.musicTimer = setInterval(() => this.scheduleMusicPhrase(), 1200);
-  }
-
-  private scheduleMusicPhrase() {
-    const ctx = this.getCtx();
-    const start = ctx.currentTime + 0.05;
-    const scale = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25];
-    const phrase = [[0, 2, 4, 3], [4, 5, 4, 2], [0, 4, 3, 2], [4, 5, 3, 4]][this.musicStep % 4];
-
-    for (let i = 0; i < 4; i++) {
-        const time = start + i * 0.3;
-        this.playTone(scale[phrase[i]], 0.12, {
-            type: 'triangle',
-            volume: 0.1,
-            delay: time - ctx.currentTime,
-            destination: this.musicGain!
-        });
-        if (i % 2 === 0) {
-            this.playTone(scale[phrase[i]] / 2, 0.25, {
-                type: 'sine',
-                volume: 0.15,
-                delay: time - ctx.currentTime,
-                destination: this.musicGain!
-            });
-        }
+    this.initBGM();
+    if (this.bgm && this.musicEnabled && this.bgm.paused) {
+      this.bgm.play().catch(e => console.warn('BGM play failed', e));
     }
-    this.musicStep++;
   }
 
   stopBGMusic() {
-    if (this.musicTimer) {
-      clearInterval(this.musicTimer);
-      this.musicTimer = null;
+    if (this.bgm) {
+      this.bgm.pause();
     }
-    for (const source of this.musicSources) try { source.stop(); } catch {}
-    this.musicSources.clear();
   }
 
   playCoin() {
@@ -214,28 +242,54 @@ class SoundManager {
 
   playCrash() { this.playGameOver(); }
 
-  setVolumes(master: number, music: number, sfx: number) {
-    this.masterVolume = clamp01(master);
-    this.musicVolume = clamp01(music);
-    this.sfxVolume = clamp01(sfx);
+  setVolumes({ master, music, sfx }: { master?: number; music?: number; sfx?: number }) {
+    if (master !== undefined) this.masterVolume = clamp01(master);
+    if (music !== undefined) this.musicVolume = clamp01(music);
+    if (sfx !== undefined) this.sfxVolume = clamp01(sfx);
     this.applyVolumes();
+    this.saveSettings();
   }
 
-  get volumes() { return { master: this.masterVolume, music: this.musicVolume, sfx: this.sfxVolume }; }
+  get volumes() {
+    return {
+      master: this.masterVolume,
+      music: this.musicVolume,
+      sfx: this.sfxVolume,
+      musicEnabled: this.musicEnabled,
+      sfxEnabled: this.sfxEnabled
+    };
+  }
   
   toggleMusic() {
     this.musicEnabled = !this.musicEnabled;
     this.applyVolumes();
     if (this.musicEnabled) this.startBGMusic();
     else this.stopBGMusic();
+    this.saveSettings();
     return this.musicEnabled;
   }
 
   toggleSFX() {
     this.sfxEnabled = !this.sfxEnabled;
     this.applyVolumes();
+    this.saveSettings();
     return this.sfxEnabled;
+  }
+
+  setMusicEnabled(enabled: boolean) {
+    this.musicEnabled = enabled;
+    this.applyVolumes();
+    if (this.musicEnabled) this.startBGMusic();
+    else this.stopBGMusic();
+    this.saveSettings();
+  }
+
+  setSfxEnabled(enabled: boolean) {
+    this.sfxEnabled = enabled;
+    this.applyVolumes();
+    this.saveSettings();
   }
 }
 
 export const soundManager = new SoundManager();
+

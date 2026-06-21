@@ -40,10 +40,17 @@ export default function PauseMenu() {
   
   const [vols, setVols] = useState(soundManager.volumes);
 
-  const updateVols = (key: keyof typeof vols, val: number) => {
-    const next = { ...vols, [key]: val };
-    setVols(next);
-    soundManager.setVolumes(next.master, next.music, next.sfx);
+  const updateVols = (key: 'music' | 'sfx', val: number) => {
+    soundManager.setVolumes({ [key]: val });
+    setVols(soundManager.volumes);
+  };
+
+  const toggleMute = () => {
+    // Basic mute logic: if music is enabled, disable both, else enable both
+    const newState = !vols.musicEnabled;
+    soundManager.setMusicEnabled(newState);
+    soundManager.setSfxEnabled(newState);
+    setVols(soundManager.volumes);
   };
 
   return (
@@ -57,7 +64,7 @@ export default function PauseMenu() {
     }}>
       <div style={{
         background: 'linear-gradient(145deg, rgba(30, 35, 50, 0.9), rgba(15, 20, 35, 0.95))',
-        padding: '40px',
+        padding: '30px',
         borderRadius: '32px',
         width: '340px',
         textAlign: 'center',
@@ -65,27 +72,38 @@ export default function PauseMenu() {
         animation: 'popIn 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)'
       }}>
         <div style={{ color: '#3b82f6', fontSize: '10px', fontWeight: 800, letterSpacing: '4px', marginBottom: '8px' }}>SESSION PAUSED</div>
-        <h1 style={{ color: 'white', margin: '0 0 8px 0', fontSize: '36px', fontWeight: 900, letterSpacing: '-1px' }}>RESUME?</h1>
-        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', marginBottom: '32px' }}>Current Score: <span style={{ color: '#fff', fontWeight: 600 }}>{score.toLocaleString()}</span></div>
+        <h1 style={{ color: 'white', margin: '0 0 8px 0', fontSize: '32px', fontWeight: 900, letterSpacing: '-1px' }}>RESUME?</h1>
+        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', marginBottom: '24px' }}>Current Score: <span style={{ color: '#fff', fontWeight: 600 }}>{score.toLocaleString()}</span></div>
         
         <div style={{ 
           background: 'rgba(0,0,0,0.2)', 
-          padding: '24px', 
+          padding: '20px', 
           borderRadius: '20px', 
-          marginBottom: '32px',
+          marginBottom: '24px',
           border: '1px solid rgba(255,255,255,0.03)'
         }}>
-          <Slider label="Master Volume" value={vols.master} onChange={(v) => updateVols('master', v)} />
-          <Slider label="Background Music" value={vols.music} onChange={(v) => updateVols('music', v)} />
-          <Slider label="Sound Effects" value={vols.sfx} onChange={(v) => updateVols('sfx', v)} />
+          <Slider label="Music Volume" value={vols.music} onChange={(v) => updateVols('music', v)} />
+          <Slider label="SFX Volume" value={vols.sfx} onChange={(v) => updateVols('sfx', v)} />
+          
+          <button 
+            onClick={toggleMute}
+            style={{
+              width: '100%', padding: '10px', borderRadius: '12px', border: 'none',
+              background: vols.musicEnabled ? 'rgba(255,255,255,0.1)' : '#ef4444',
+              color: 'white', fontWeight: 700, fontSize: '12px', cursor: 'pointer',
+              marginTop: '8px', transition: 'all 0.2s'
+            }}
+          >
+            {vols.musicEnabled ? '🔊 MUTE ALL' : '🔇 UNMUTE ALL'}
+          </button>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <button 
             onClick={resume}
             style={{
-              padding: '18px', borderRadius: '16px', border: 'none',
-              background: '#3b82f6', color: 'white', fontWeight: 700, fontSize: '18px',
+              padding: '16px', borderRadius: '16px', border: 'none',
+              background: '#3b82f6', color: 'white', fontWeight: 700, fontSize: '16px',
               cursor: 'pointer', boxShadow: '0 8px 24px rgba(59, 130, 246, 0.3)',
               transition: 'all 0.2s ease'
             }}
@@ -98,17 +116,9 @@ export default function PauseMenu() {
           <button 
             onClick={restart}
             style={{
-              padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)',
-              background: 'transparent', color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '15px',
+              padding: '14px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)',
+              background: 'transparent', color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '14px',
               cursor: 'pointer', transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={e => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-                e.currentTarget.style.color = '#fff';
-            }}
-            onMouseLeave={e => {
-                e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.color = 'rgba(255,255,255,0.6)';
             }}
           >
             RESTART MISSION
