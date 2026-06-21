@@ -6,6 +6,7 @@ import { useGameStore, worldZRef } from '../../store/gameStore';
 import { LANE_POSITIONS, TARGET_DOWN_OBS_HEIGHT, TARGET_TRAIN_HEIGHT, TARGET_UP_OBS_HEIGHT } from '../../config/constants';
 import { ObstacleData } from '../../types/game';
 import { InstancedModelBatch, InstancedModelItem } from './InstancedModel';
+import { qualityManager } from '../../utils/qualityManager';
 
 const UP_URL = '/assets/Environment/up_obstacle.glb';
 const DOWN_URL = '/assets/Environment/down_obstacle.glb';
@@ -40,6 +41,7 @@ function toItem(obs: ObstacleData): InstancedModelItem {
 export default function Obstacles() {
   const groupRef = useRef<THREE.Group>(null!);
   const chunks = useGameStore(s => s.chunks);
+  const quality = qualityManager.settings;
 
   useFrame(() => {
     if (groupRef.current) groupRef.current.position.z = worldZRef.current;
@@ -56,11 +58,15 @@ export default function Obstacles() {
     [obstacles]
   );
 
+  const castShadow = quality.enableShadows;
+  const receiveShadow = quality.enableShadows;
+
   return (
     <group ref={groupRef}>
-      <InstancedModelBatch url={UP_URL} targetHeight={TARGET_UP_OBS_HEIGHT} items={upItems} />
-      <InstancedModelBatch url={TRAIN_URL_1} targetHeight={TARGET_TRAIN_HEIGHT} items={train1Items} />
-      <InstancedModelBatch url={TRAIN_URL_2} targetHeight={TARGET_TRAIN_HEIGHT} items={train2Items} />
+      <InstancedModelBatch url={UP_URL} targetHeight={TARGET_UP_OBS_HEIGHT} items={upItems} castShadow={castShadow} receiveShadow={receiveShadow} />
+      <InstancedModelBatch url={TRAIN_URL_1} targetHeight={TARGET_TRAIN_HEIGHT} items={train1Items} castShadow={castShadow} receiveShadow={receiveShadow} />
+      <InstancedModelBatch url={TRAIN_URL_2} targetHeight={TARGET_TRAIN_HEIGHT} items={train2Items} castShadow={castShadow} receiveShadow={receiveShadow} />
     </group>
   );
 }
+

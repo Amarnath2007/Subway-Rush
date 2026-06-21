@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { CHUNK_LENGTH, CHUNKS_AHEAD, CHUNKS_BEHIND, LANE_POSITIONS } from '../../config/constants';
 import { useGameStore, worldZRef } from '../../store/gameStore';
+import { qualityManager } from '../../utils/qualityManager';
 
 const TRACK_WIDTH = 11.5;
 const PAVEMENT_WIDTH = 280.0;
@@ -28,10 +29,12 @@ function TrackInstances({
   geometry,
   material,
   matrices,
+  receiveShadow = false,
 }: {
   geometry: THREE.BufferGeometry;
   material: THREE.Material;
   matrices: THREE.Matrix4[];
+  receiveShadow?: boolean;
 }) {
   const ref = useRef<THREE.InstancedMesh>(null!);
 
@@ -52,6 +55,7 @@ function TrackInstances({
       ref={ref}
       args={[geometry, material, matrices.length]}
       frustumCulled={true}
+      receiveShadow={receiveShadow}
       dispose={null}
     />
   );
@@ -61,6 +65,7 @@ export default function Track() {
   const groupRef = useRef<THREE.Group>(null!);
   const chunks = useGameStore(s => s.chunks);
   const chunkZs = chunks.length > 0 ? chunks.map(chunk => chunk.z) : PREVIEW_ZS;
+  const quality = qualityManager.settings;
 
   useFrame(() => {
     if (groupRef.current) {
@@ -88,43 +93,43 @@ export default function Track() {
     const rails: THREE.Matrix4[] = [];
     const sleepers: THREE.Matrix4[] = [];
 
+    // On low quality, we can increase sleeper spacing or skip some
+    const effectiveSleeperSpacing = quality.tier === 'low' ? SLEEPER_SPACING * 1.5 : SLEEPER_SPACING;
+    const sleepersPerChunk = Math.ceil(CHUNK_LENGTH / effectiveSleeperSpacing);
+
     for (const frontZ of chunkZs) {
       const centerZ = frontZ - CHUNK_LENGTH / 2;
       
-      // Wide city ground
       pavement.push(makeMatrix(0, -0.05, centerZ, unit));
-      
-      // Main track ballast
       ballast.push(makeMatrix(0, 0, centerZ, unit));
-      
-      // Sidewalks on both sides
       sidewalks.push(makeMatrix(-SIDEWALK_X, 0.05, centerZ, unit));
       sidewalks.push(makeMatrix(SIDEWALK_X, 0.05, centerZ, unit));
 
       for (const laneX of LANE_POSITIONS) {
-        // Rails for each track
         rails.push(makeMatrix(laneX - 0.65, 0.1, centerZ, unit));
         rails.push(makeMatrix(laneX + 0.65, 0.1, centerZ, unit));
 
-        // Sleepers
-        for (let i = 0; i < SLEEPERS_PER_CHUNK; i++) {
-          const z = frontZ - i * SLEEPER_SPACING - SLEEPER_SPACING * 0.35;
+        for (let i = 0; i < sleepersPerChunk; i++) {
+          const z = frontZ - i * effectiveSleeperSpacing - effectiveSleeperSpacing * 0.35;
           sleepers.push(makeMatrix(laneX, 0.04, z, unit));
         }
       }
     }
 
     return { ballast, pavement, sidewalks, rails, sleepers };
-  }, [chunkZs]);
+  }, [chunkZs, quality.tier]);
+
+  const receiveShadow = quality.enableShadows;
 
   return (
     <group ref={groupRef}>
-      <TrackInstances geometry={pavementGeo} material={pavementMat} matrices={matrices.pavement} />
-      <TrackInstances geometry={ballastGeo} material={ballastMat} matrices={matrices.ballast} />
-      <TrackInstances geometry={sidewalkGeo} material={sidewalkMat} matrices={matrices.sidewalks} />
-      <TrackInstances geometry={railGeo} material={railMat} matrices={matrices.rails} />
-      <TrackInstances geometry={sleeperGeo} material={sleeperMat} matrices={matrices.sleepers} />
+      <TrackInstances geometry={pavementGeo} material={pavementMat} matrices={matrices.pavement} receiveShadow={false} />
+      <TrackInstances geometry={ballastGeo} material={ballastMat} matrices={matrices.ballast} receiveShadow={receiveShadow} />
+      <TrackInstances geometry={sidewalkGeo} material={sidewalkMat} matrices={matrices.sidewalks} receiveShadow={receiveShadow} />
+      <TrackInstances geometry={railGeo} material={railMat} matrices={matrices.rails} receiveShadow={receiveShadow} />
+      <TrackInstances geometry={sleeperGeo} material={sleeperMat} matrices={matrices.sleepers} receiveShadow={receiveShadow} />
     </group>
   );
 }
+
 

@@ -31,6 +31,7 @@ import {
 import { soundManager } from '../../utils/soundManager';
 import { applyMeshRenderOptions, computeNormalizedTransform } from '../../utils/normalizeModel';
 import { SkeletonUtils } from 'three-stdlib';
+import { qualityManager } from '../../utils/qualityManager';
 
 interface EBState { hasError: boolean }
 class ModelErrorBoundary extends Component<{ children: ReactNode; fallback: ReactNode }, EBState> {
@@ -88,7 +89,11 @@ function FBXCharacter() {
     const { scale, position } = computeNormalizedTransform(cloned, TARGET_PLAYER_HEIGHT * (characterConfig.scaleOverride ?? 1.0), { centerXZ: true });
     cloned.scale.setScalar(scale);
     cloned.position.set(position.x, position.y + (characterConfig.yOffset ?? 0), position.z);
-    applyMeshRenderOptions(cloned, { castShadow: true, receiveShadow: false, frustumCulled: false });
+    applyMeshRenderOptions(cloned, { 
+      castShadow: qualityManager.settings.enableShadows, 
+      receiveShadow: false, 
+      frustumCulled: true 
+    });
     return cloned;
   }, [base, characterConfig]);
   const clips = useMemo(() => [

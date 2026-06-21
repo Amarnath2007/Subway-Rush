@@ -1,5 +1,6 @@
 // ─── Quality Tier Manager ──────────────────────────────────────────────────
 // Detects device capabilities and provides quality settings for the renderer.
+// V2: Enhanced mobile detection and more aggressive mobile optimizations.
 
 export type QualityTier = 'low' | 'medium' | 'high';
 
@@ -13,30 +14,61 @@ export interface QualitySettings {
   envDensity: number;       // 0–1, multiplier for environment prop count
   antialias: boolean;
   maxCoinAnimations: number;
+  // V2 additions
+  shadowMapSize: number;
+  maxPointLights: number;
+  enablePowerupGlow: boolean;
+  enableClouds: boolean;
+  enableDistantSkyline: boolean;
+  enableStars: boolean;
+  envPropCastShadow: boolean;
+  sparkleParticles: number;
+  fogNear: number;
+  fogFar: number;
 }
 
 const QUALITY_PRESETS: Record<QualityTier, QualitySettings> = {
   low: {
     tier: 'low',
-    dpr: [1, 1],
+    dpr: [0.75, 1],
     chunksAhead: 4,
-    chunksBehind: 2,
-    maxParticles: 32,
+    chunksBehind: 1,
+    maxParticles: 16,
     enableShadows: false,
-    envDensity: 0.5,
+    envDensity: 0.4,
     antialias: false,
-    maxCoinAnimations: 40,
+    maxCoinAnimations: 30,
+    shadowMapSize: 512,
+    maxPointLights: 0,
+    enablePowerupGlow: false,
+    enableClouds: false,
+    enableDistantSkyline: false,
+    enableStars: false,
+    envPropCastShadow: false,
+    sparkleParticles: 24,
+    fogNear: 25,
+    fogFar: 140,
   },
   medium: {
     tier: 'medium',
     dpr: [1, 1.25],
     chunksAhead: 5,
     chunksBehind: 2,
-    maxParticles: 64,
+    maxParticles: 48,
     enableShadows: false,
-    envDensity: 0.75,
+    envDensity: 0.65,
     antialias: false,
-    maxCoinAnimations: 80,
+    maxCoinAnimations: 60,
+    shadowMapSize: 1024,
+    maxPointLights: 1,
+    enablePowerupGlow: true,
+    enableClouds: true,
+    enableDistantSkyline: false,
+    enableStars: false,
+    envPropCastShadow: false,
+    sparkleParticles: 48,
+    fogNear: 30,
+    fogFar: 180,
   },
   high: {
     tier: 'high',
@@ -44,18 +76,40 @@ const QUALITY_PRESETS: Record<QualityTier, QualitySettings> = {
     chunksAhead: 6,
     chunksBehind: 3,
     maxParticles: 96,
-    enableShadows: false,
+    enableShadows: true,
     envDensity: 1.0,
-    antialias: false,
+    antialias: true,
     maxCoinAnimations: 120,
+    shadowMapSize: 1024,
+    maxPointLights: 3,
+    enablePowerupGlow: true,
+    enableClouds: true,
+    enableDistantSkyline: true,
+    enableStars: true,
+    envPropCastShadow: true,
+    sparkleParticles: 96,
+    fogNear: 55,
+    fogFar: 210,
   },
 };
 
 function detectIsMobile(): boolean {
   if (typeof navigator === 'undefined') return false;
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+  // Check user agent
+  const uaMatch = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
     navigator.userAgent
   );
+  // Also check touch support + small screen as a fallback
+  const touchMatch = ('ontouchstart' in window || navigator.maxTouchPoints > 0) && 
+    window.innerWidth < 1024;
+  return uaMatch || touchMatch;
+}
+
+function detectIsLowEndMobile(): boolean {
+  if (!detectIsMobile()) return false;
+  const cores = navigator.hardwareConcurrency ?? 4;
+  const memory = (navigator as unknown as { deviceMemory?: number }).deviceMemory ?? 4;
+  return cores <= 4 || memory <= 3;
 }
 
 function detectTier(): QualityTier {
@@ -82,12 +136,14 @@ function detectTier(): QualityTier {
 class QualityManager {
   private _settings: QualitySettings;
   private _isMobile: boolean;
+  private _isLowEnd: boolean;
   private _fpsHistory: number[] = [];
   private _lastFrameTime = 0;
   private _downgradeCount = 0;
 
   constructor() {
     this._isMobile = detectIsMobile();
+    this._isLowEnd = detectIsLowEndMobile();
     const tier = detectTier();
     this._settings = { ...QUALITY_PRESETS[tier] };
   }
@@ -98,6 +154,10 @@ class QualityManager {
 
   get isMobile(): boolean {
     return this._isMobile;
+  }
+
+  get isLowEnd(): boolean {
+    return this._isLowEnd;
   }
 
   get tier(): QualityTier {
@@ -116,12 +176,13 @@ class QualityManager {
         this._fpsHistory.shift();
       }
 
-      // Check after 90 frames of data
-      if (this._fpsHistory.length >= 90 && this._downgradeCount < 2) {
+      // Check after 60 frames of data (react faster on mobile)
+      const checkThreshold = this._isMobile ? 60 : 90;
+      if (this._fpsHistory.length >= checkThreshold && this._downgradeCount < 2) {
         const avgFps =
           this._fpsHistory.reduce((a, b) => a + b, 0) / this._fpsHistory.length;
 
-        const threshold = this._isMobile ? 35 : 45;
+        const threshold = this._isMobile ? 30 : 45;
         if (avgFps < threshold) {
           this._downgrade();
           this._fpsHistory.length = 0;

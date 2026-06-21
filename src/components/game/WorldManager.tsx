@@ -89,6 +89,9 @@ export default function WorldManager() {
     // Smoother tick clamping
     const clampedDelta = Math.min(delta, 0.04);
     state.tick(clampedDelta);
+    
+    // Adaptive quality tracking
+    qualityManager.trackFrame();
 
     const worldZ = worldZRef.current;
     const centerIndex = getChunkIndexForWorld(worldZ);

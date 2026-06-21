@@ -6,6 +6,7 @@ import { jumpYRef, playerXRef, useGameStore, worldZRef } from '../../store/gameS
 import { GROUND_COIN_Y, LANE_POSITIONS, MAGNET_RADIUS, TARGET_COIN_SIZE } from '../../config/constants';
 import { CoinData } from '../../types/game';
 import { InstancedModelSource, useInstancedModelSources } from './InstancedModel';
+import { qualityManager } from '../../utils/qualityManager';
 
 const COIN_URL = '/assets/Environment/subway_surfers_coin.glb';
 const Y_AXIS = new THREE.Vector3(0, 1, 0);
@@ -53,12 +54,17 @@ function CoinLayer({ source, coins }: { source: InstancedModelSource; coins: Coi
     const mesh = meshRef.current;
     if (!mesh) return;
     const state = useGameStore.getState();
+    const quality = qualityManager.settings;
     const isMagnetActive = state.activePowerups.has('magnet');
     const magnetTargetX = playerXRef.current;
     const magnetTargetY = jumpYRef.current + 0.85;
     const worldZ = worldZRef.current;
 
-    for (let i = 0; i < coins.length; i++) {
+    // Limit the number of coins we animate to save CPU/GPU on mobile
+    const displayCount = Math.min(coins.length, quality.maxCoinAnimations);
+    mesh.count = displayCount;
+
+    for (let i = 0; i < displayCount; i++) {
       const coin = coins[i];
       const phase = hashUnit(coin.id) * Math.PI * 2;
       const spin = time * 4.2 + phase;
@@ -67,14 +73,16 @@ function CoinLayer({ source, coins }: { source: InstancedModelSource; coins: Coi
       let y = baseY + Math.sin(time * 3 + phase) * 0.08;
       let z = coin.z;
 
+      // Only perform expensive magnet math if magnet is active
       if (isMagnetActive) {
         const coinWorldZ = coin.z + worldZ;
         const dx = x - magnetTargetX;
         const dy = baseY - magnetTargetY;
         const dz = coinWorldZ;
-        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        const distSq = dx * dx + dy * dy + dz * dz;
 
-        if (dist < MAGNET_RADIUS) {
+        if (distSq < MAGNET_RADIUS * MAGNET_RADIUS) {
+          const dist = Math.sqrt(distSq);
           const pull = Math.pow(1 - dist / MAGNET_RADIUS, 1.7) * 0.92;
           x = THREE.MathUtils.lerp(x, magnetTargetX, pull);
           y = THREE.MathUtils.lerp(y, magnetTargetY, pull);
@@ -99,7 +107,10 @@ function CoinLayer({ source, coins }: { source: InstancedModelSource; coins: Coi
   }, [coins, source]);
 
   useFrame(({ clock }) => {
-    writeMatrices(clock.elapsedTime);
+    // Only update matrices if there are coins to show
+    if (coins.length > 0) {
+      writeMatrices(clock.elapsedTime);
+    }
   });
 
   if (coins.length === 0) return null;
@@ -107,7 +118,7 @@ function CoinLayer({ source, coins }: { source: InstancedModelSource; coins: Coi
   return (
     <instancedMesh
       ref={meshRef}
-      args={[source.geometry, source.material, coins.length]}
+      args={[source.geometry, source.material, qualityManager.settings.maxCoinAnimations]}
       frustumCulled={true}
       dispose={null}
     />
@@ -124,23 +135,30 @@ export default function Coins() {
     () => sources.map(source => ({ ...source, material: boostCoinMaterial(source.material) })),
     [sources]
   );
+  
+  const quality = qualityManager.settings;
 
   useFrame(() => {
     if (groupRef.current) groupRef.current.position.z = worldZRef.current;
   });
 
   const visibleCoins = useMemo(
-    () => chunks
-      .flatMap(c => c.coins)
-      .filter(coin => !collectedCoinIds.has(coin.id))
-      .filter(coin => coin.kind !== 'aerial' || isJetpackActive),
-    [chunks, collectedCoinIds, isJetpackActive]
+    () => {
+      const all = chunks
+        .flatMap(c => c.coins)
+        .filter(coin => !collectedCoinIds.has(coin.id))
+        .filter(coin => coin.kind !== 'aerial' || isJetpackActive);
+      
+      // Sort by Z to ensure we animate and show the closest coins first
+      return all.sort((a, b) => b.z - a.z).slice(0, quality.maxCoinAnimations + 10);
+    },
+    [chunks, collectedCoinIds, isJetpackActive, quality.maxCoinAnimations]
   );
 
   return (
     <group ref={groupRef}>
       {readableSources.map(source => (
-        <CoinLayer key={`${source.key}:${visibleCoins.length}`} source={source} coins={visibleCoins} />
+        <CoinLayer key={`${source.key}`} source={source} coins={visibleCoins} />
       ))}
     </group>
   );

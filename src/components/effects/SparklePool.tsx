@@ -2,6 +2,7 @@ import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useGameStore } from '../../store/gameStore';
+import { qualityManager } from '../../utils/qualityManager';
 
 interface Particle {
   pos: THREE.Vector3;
@@ -10,9 +11,8 @@ interface Particle {
   maxLife: number;
 }
 
-const MAX_PARTICLES = 96;
-
 export default function SparklePool() {
+  const maxParticles = qualityManager.settings.sparkleParticles;
   const particlesRef = useRef<Particle[]>([]);
   const meshRef = useRef<THREE.InstancedMesh>(null!);
   const prevCoins = useRef(0);
@@ -20,7 +20,7 @@ export default function SparklePool() {
   const position = useRef(new THREE.Vector3());
   const quaternion = useRef(new THREE.Quaternion());
   const scale = useRef(new THREE.Vector3());
-  const geometry = useMemo(() => new THREE.SphereGeometry(0.07, 6, 6), []);
+  const geometry = useMemo(() => new THREE.SphereGeometry(0.07, 4, 4), []);
   const material = useMemo(() => new THREE.MeshBasicMaterial({ color: '#ffd700' }), []);
 
   useLayoutEffect(() => {
@@ -31,13 +31,13 @@ export default function SparklePool() {
     const coins = useGameStore.getState().coins;
 
     if (coins > prevCoins.current) {
-      const burstCount = Math.min((coins - prevCoins.current) * 8, 24);
-      for (let i = 0; i < burstCount && particlesRef.current.length < MAX_PARTICLES; i++) {
+      const burstCount = Math.min((coins - prevCoins.current) * 6, 16);
+      for (let i = 0; i < burstCount && particlesRef.current.length < maxParticles; i++) {
         particlesRef.current.push({
           pos: new THREE.Vector3((Math.random() - 0.5) * 0.8, 0.85 + Math.random() * 0.4, 0),
           vel: new THREE.Vector3((Math.random() - 0.5) * 3, 1.5 + Math.random() * 3, (Math.random() - 0.5) * 2),
           life: 0,
-          maxLife: 0.35 + Math.random() * 0.25,
+          maxLife: 0.3 + Math.random() * 0.2,
         });
       }
     }
@@ -73,7 +73,7 @@ export default function SparklePool() {
   return (
     <instancedMesh
       ref={meshRef}
-      args={[geometry, material, MAX_PARTICLES]}
+      args={[geometry, material, maxParticles]}
       frustumCulled={false}
     />
   );

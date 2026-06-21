@@ -1,12 +1,13 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Sky, Stars, useGLTF } from '@react-three/drei';
+import { Sky, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { mergeBufferGeometries } from 'three-stdlib';
 import { useGameStore, worldZRef } from '../../store/gameStore';
 import { CHUNK_LENGTH, TARGET_BUILDING_HEIGHT, TARGET_TREE_HEIGHT } from '../../config/constants';
 import { EnvProp } from '../../types/game';
 import { InstancedModelBatch, InstancedModelItem } from './InstancedModel';
+import { qualityManager } from '../../utils/qualityManager';
 
 const BUILDING1_URL = '/assets/Environment/cartoon_building1.glb';
 const BUILDING2_URL = '/assets/Environment/cartoon_building2.glb';
@@ -72,13 +73,18 @@ function StaticInstances({
   material,
   matrices,
   colors,
+  castShadow: castShadowProp = true,
+  receiveShadow: receiveShadowProp = true,
 }: {
   geometry: THREE.BufferGeometry;
   material: THREE.Material;
   matrices: THREE.Matrix4[];
   colors?: THREE.Color[];
+  castShadow?: boolean;
+  receiveShadow?: boolean;
 }) {
   const ref = useRef<THREE.InstancedMesh>(null!);
+  const quality = qualityManager.settings;
 
   useLayoutEffect(() => {
     const mesh = ref.current;
@@ -97,6 +103,10 @@ function StaticInstances({
 
   if (matrices.length === 0) return null;
 
+  // On low quality, environment props don't cast shadows
+  const shouldCastShadow = castShadowProp && quality.envPropCastShadow;
+  const shouldReceiveShadow = receiveShadowProp && quality.enableShadows;
+
   return (
     <instancedMesh
       key={matrices.length}
@@ -104,16 +114,16 @@ function StaticInstances({
       args={[geometry, material, matrices.length]}
       frustumCulled={true}
       dispose={null}
-      castShadow
-      receiveShadow
+      castShadow={shouldCastShadow}
+      receiveShadow={shouldReceiveShadow}
     />
   );
 }
 
 function OverheadWires({ chunkFronts }: { chunkFronts: number[] }) {
-  const poleGeo = useMemo(() => new THREE.CylinderGeometry(0.07, 0.09, 4.4, 8), []);
+  const poleGeo = useMemo(() => new THREE.CylinderGeometry(0.07, 0.09, 4.4, 6), []);
   const crossGeo = useMemo(() => new THREE.BoxGeometry(13.5, 0.08, 0.06), []);
-  const insulatorGeo = useMemo(() => new THREE.SphereGeometry(0.07, 8, 8), []);
+  const insulatorGeo = useMemo(() => new THREE.SphereGeometry(0.07, 6, 6), []);
   const poleMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#37474f', metalness: 0.35, roughness: 0.55 }), []);
   const crossMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#546e7a', metalness: 0.35, roughness: 0.45 }), []);
   const insulatorMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#e0e0e0', roughness: 0.4 }), []);
@@ -144,21 +154,14 @@ function OverheadWires({ chunkFronts }: { chunkFronts: number[] }) {
 
   return (
     <>
-      <StaticInstances geometry={poleGeo} material={poleMat} matrices={matrices.poles} />
-      <StaticInstances geometry={crossGeo} material={crossMat} matrices={matrices.crosses} />
-      <StaticInstances geometry={insulatorGeo} material={insulatorMat} matrices={matrices.insulators} />
+      <StaticInstances geometry={poleGeo} material={poleMat} matrices={matrices.poles} castShadow={false} />
+      <StaticInstances geometry={crossGeo} material={crossMat} matrices={matrices.crosses} castShadow={false} />
+      <StaticInstances geometry={insulatorGeo} material={insulatorMat} matrices={matrices.insulators} castShadow={false} />
     </>
   );
 }
 
 function DistantSkyline() {
-  const skylineMat = useMemo(() => new THREE.MeshStandardMaterial({
-    color: '#90a4ae',
-    roughness: 0.9,
-    metalness: 0.1,
-    transparent: true,
-  }), []);
-
   return (
     <group position={[0, 0, -180]}>
       {/* City Fog/Atmosphere Plane */}
@@ -171,7 +174,7 @@ function DistantSkyline() {
       <group position={[0, 0, 0]}>
         {[-140, -120, -100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100, 120, 140].map((x, i) => {
           const h = 15 + Math.abs(Math.sin(i * 1.7)) * 25;
-          const w = 8 + Math.random() * 6;
+          const w = 8 + (i * 3.7) % 6; // deterministic instead of Math.random()
           return (
             <mesh key={`b1-${i}`} position={[x, h / 2, 0]}>
               <boxGeometry args={[w, h, 8]} />
@@ -185,7 +188,7 @@ function DistantSkyline() {
       <group position={[0, 0, -40]}>
         {[-180, -150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150, 180].map((x, i) => {
           const h = 40 + Math.abs(Math.cos(i * 2.1)) * 30;
-          const w = 12 + Math.random() * 8;
+          const w = 12 + (i * 2.3) % 8; // deterministic instead of Math.random()
           return (
             <mesh key={`b2-${i}`} position={[x, h / 2, 0]}>
               <boxGeometry args={[w, h, 10]} />
@@ -199,27 +202,37 @@ function DistantSkyline() {
 }
 
 function Clouds() {
-  const cloudGeo = useMemo(() => new THREE.SphereGeometry(1, 12, 12), []);
+  const cloudGeo = useMemo(() => new THREE.SphereGeometry(1, 8, 8), []);
   const cloudMat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.8 }), []);
+
+  // Reduce cloud count on mobile
+  const cloudCount = qualityManager.isMobile ? 6 : 12;
 
   return (
     <group position={[0, 45, -120]}>
-      {[...Array(12)].map((_, i) => (
-        <group key={i} position={[(i - 6) * 35 + Math.random() * 15, Math.random() * 12, -Math.random() * 60]}>
-          <mesh scale={[12, 5, 7]}>
-            <primitive object={cloudGeo} />
-            <primitive object={cloudMat} />
-          </mesh>
-          <mesh position={[5, -1, 3]} scale={[7, 3.5, 4.5]}>
-            <primitive object={cloudGeo} />
-            <primitive object={cloudMat} />
-          </mesh>
-          <mesh position={[-4, 1.5, -3]} scale={[8, 4, 6]}>
-            <primitive object={cloudGeo} />
-            <primitive object={cloudMat} />
-          </mesh>
-        </group>
-      ))}
+      {[...Array(cloudCount)].map((_, i) => {
+        // Use deterministic positions instead of Math.random() for stable rendering
+        const xBase = (i - cloudCount / 2) * 35;
+        const xOffset = Math.sin(i * 2.7) * 15;
+        const yBase = Math.abs(Math.cos(i * 1.3)) * 12;
+        const zBase = -Math.abs(Math.sin(i * 0.8)) * 60;
+        return (
+          <group key={i} position={[xBase + xOffset, yBase, zBase]}>
+            <mesh scale={[12, 5, 7]}>
+              <primitive object={cloudGeo} />
+              <primitive object={cloudMat} />
+            </mesh>
+            <mesh position={[5, -1, 3]} scale={[7, 3.5, 4.5]}>
+              <primitive object={cloudGeo} />
+              <primitive object={cloudMat} />
+            </mesh>
+            <mesh position={[-4, 1.5, -3]} scale={[8, 4, 6]}>
+              <primitive object={cloudGeo} />
+              <primitive object={cloudMat} />
+            </mesh>
+          </group>
+        );
+      })}
     </group>
   );
 }
@@ -227,6 +240,7 @@ function Clouds() {
 export default function Environment() {
   const groupRef = useRef<THREE.Group>(null!);
   const chunks = useGameStore(s => s.chunks);
+  const quality = qualityManager.settings;
 
   useFrame(() => {
     if (groupRef.current) groupRef.current.position.z = worldZRef.current;
@@ -242,8 +256,6 @@ export default function Environment() {
   const building2Items = useMemo(() => envProps.filter(p => p.type === 'building2').map(toBuildingItem), [envProps]);
   const building3Items = useMemo(() => envProps.filter(p => p.type === 'building3').map(toBuildingItem), [envProps]);
 
-  // --- High-Quality Procedural Geometries ---
-
   // --- High-Quality Procedural Geometries (Scaled up for better presence) ---
 
   const fenceGeo = useMemo(() => {
@@ -254,7 +266,7 @@ export default function Environment() {
   const fenceMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#455a64', roughness: 0.7 }), []);
 
   const streetlightGeo = useMemo(() => {
-    const pole = new THREE.CylinderGeometry(0.12, 0.18, 7.5, 8);
+    const pole = new THREE.CylinderGeometry(0.12, 0.18, 7.5, 6);
     pole.translate(0, 3.75, 0);
     const lamp = new THREE.BoxGeometry(1.2, 0.3, 0.6);
     lamp.translate(0.6, 7.5, 0);
@@ -262,9 +274,9 @@ export default function Environment() {
   }, []);
 
   const fancyStreetlightGeo = useMemo(() => {
-    const pole = new THREE.CylinderGeometry(0.15, 0.22, 8.5, 8);
+    const pole = new THREE.CylinderGeometry(0.15, 0.22, 8.5, 6);
     pole.translate(0, 4.25, 0);
-    const arm = new THREE.CylinderGeometry(0.08, 0.08, 1.8, 8);
+    const arm = new THREE.CylinderGeometry(0.08, 0.08, 1.8, 6);
     arm.rotateZ(Math.PI / 2.5);
     arm.translate(0.8, 8.2, 0);
     const head = new THREE.BoxGeometry(1.0, 0.4, 0.8);
@@ -275,16 +287,16 @@ export default function Environment() {
   const streetlightMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#37474f', roughness: 0.4, metalness: 0.3 }), []);
 
   const trashbinGeo = useMemo(() => {
-    const body = new THREE.CylinderGeometry(0.4, 0.35, 1.3, 12);
+    const body = new THREE.CylinderGeometry(0.4, 0.35, 1.3, 8);
     body.translate(0, 0.65, 0);
-    const lid = new THREE.CylinderGeometry(0.45, 0.45, 0.15, 12);
+    const lid = new THREE.CylinderGeometry(0.45, 0.45, 0.15, 8);
     lid.translate(0, 1.3, 0);
     return mergeBufferGeometries([body, lid]) ?? body;
   }, []);
   const trashbinMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#546e7a', roughness: 0.6 }), []);
 
   const mailboxGeo = useMemo(() => {
-    const post = new THREE.CylinderGeometry(0.08, 0.08, 1.2, 8);
+    const post = new THREE.CylinderGeometry(0.08, 0.08, 1.2, 6);
     post.translate(0, 0.6, 0);
     const box = new THREE.BoxGeometry(0.7, 0.8, 1.0);
     box.translate(0, 1.6, 0);
@@ -302,22 +314,24 @@ export default function Environment() {
   const planterMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#795548', roughness: 0.8 }), []);
 
   const bushGeo = useMemo(() => {
-    const g1 = new THREE.SphereGeometry(0.85, 8, 8);
+    const segments = qualityManager.isMobile ? 6 : 8;
+    const g1 = new THREE.SphereGeometry(0.85, segments, segments);
     g1.translate(0, 0.7, 0);
-    const g2 = new THREE.SphereGeometry(0.7, 8, 8);
+    const g2 = new THREE.SphereGeometry(0.7, segments, segments);
     g2.translate(0.6, 0.5, 0.3);
-    const g3 = new THREE.SphereGeometry(0.75, 8, 8);
+    const g3 = new THREE.SphereGeometry(0.75, segments, segments);
     g3.translate(-0.5, 0.6, -0.2);
     return mergeBufferGeometries([g1, g2, g3]) ?? g1;
   }, []);
   const bushLargeGeo = useMemo(() => {
-    const g1 = new THREE.SphereGeometry(1.3, 8, 8);
+    const segments = qualityManager.isMobile ? 6 : 8;
+    const g1 = new THREE.SphereGeometry(1.3, segments, segments);
     g1.translate(0, 1.0, 0);
-    const g2 = new THREE.SphereGeometry(0.9, 8, 8);
+    const g2 = new THREE.SphereGeometry(0.9, segments, segments);
     g2.translate(0.8, 0.8, 0.5);
-    const g3 = new THREE.SphereGeometry(1.0, 8, 8);
+    const g3 = new THREE.SphereGeometry(1.0, segments, segments);
     g3.translate(-0.75, 0.9, -0.3);
-    const g4 = new THREE.SphereGeometry(0.8, 8, 8);
+    const g4 = new THREE.SphereGeometry(0.8, segments, segments);
     g4.translate(0.2, 1.6, -0.2);
     return mergeBufferGeometries([g1, g2, g3, g4]) ?? g1;
   }, []);
@@ -396,6 +410,9 @@ export default function Environment() {
     return m;
   }), [envProps]);
 
+  const shouldCastShadow = quality.envPropCastShadow;
+  const shouldReceiveShadow = quality.enableShadows;
+
   return (
     <>
       <Sky
@@ -405,33 +422,32 @@ export default function Environment() {
         mieCoefficient={0.005}
         mieDirectionalG={0.8}
       />
-      <fog attach="fog" args={['#b3e5fc', 30, 250]} />
+      <fog attach="fog" args={['#b3e5fc', quality.fogNear, quality.fogFar]} />
 
-      <Clouds />
-      <DistantSkyline />
+      {quality.enableClouds && <Clouds />}
+      {quality.enableDistantSkyline && <DistantSkyline />}
 
       <group ref={groupRef}>
-        <InstancedModelBatch url={TREE1_URL} targetHeight={TARGET_TREE_HEIGHT} items={tree1Items} castShadow receiveShadow />
-        <InstancedModelBatch url={TREE2_URL} targetHeight={TARGET_TREE_HEIGHT * 1.2} items={tree2Items} castShadow receiveShadow />
+        <InstancedModelBatch url={TREE1_URL} targetHeight={TARGET_TREE_HEIGHT} items={tree1Items} castShadow={shouldCastShadow} receiveShadow={shouldReceiveShadow} />
+        <InstancedModelBatch url={TREE2_URL} targetHeight={TARGET_TREE_HEIGHT * 1.2} items={tree2Items} castShadow={shouldCastShadow} receiveShadow={shouldReceiveShadow} />
 
-        <InstancedModelBatch url={BUILDING1_URL} targetHeight={TARGET_BUILDING_HEIGHT * 0.9} items={building1Items} castShadow receiveShadow />
-        <InstancedModelBatch url={BUILDING2_URL} targetHeight={TARGET_BUILDING_HEIGHT} items={building2Items} castShadow receiveShadow />
-        <InstancedModelBatch url={BUILDING3_URL} targetHeight={TARGET_BUILDING_HEIGHT * 1.3} items={building3Items} castShadow receiveShadow />
+        <InstancedModelBatch url={BUILDING1_URL} targetHeight={TARGET_BUILDING_HEIGHT * 0.9} items={building1Items} castShadow={shouldCastShadow} receiveShadow={shouldReceiveShadow} />
+        <InstancedModelBatch url={BUILDING2_URL} targetHeight={TARGET_BUILDING_HEIGHT} items={building2Items} castShadow={shouldCastShadow} receiveShadow={shouldReceiveShadow} />
+        <InstancedModelBatch url={BUILDING3_URL} targetHeight={TARGET_BUILDING_HEIGHT * 1.3} items={building3Items} castShadow={shouldCastShadow} receiveShadow={shouldReceiveShadow} />
 
-        <StaticInstances geometry={fenceGeo} material={fenceMat} matrices={fenceMatrices} />
-        <StaticInstances geometry={streetlightGeo} material={streetlightMat} matrices={streetlightMatrices} />
-        <StaticInstances geometry={fancyStreetlightGeo} material={streetlightMat} matrices={fancyStreetlightMatrices} />
-        <StaticInstances geometry={trashbinGeo} material={trashbinMat} matrices={trashbinMatrices} />
-        <StaticInstances geometry={mailboxGeo} material={mailboxMat} matrices={mailboxMatrices} />
-        <StaticInstances geometry={planterGeo} material={planterMat} matrices={planterMatrices} />
-        <StaticInstances geometry={bushGeo} material={bushMat} matrices={bushMatrices} />
-        <StaticInstances geometry={bushLargeGeo} material={bushMat} matrices={bushLargeMatrices} />
-        <StaticInstances geometry={signboardGeo} material={signboardMat} matrices={signboardMatrices} />
-        <StaticInstances geometry={busStopGeo} material={busStopMat} matrices={busStopMatrices} />
-        <StaticInstances geometry={benchGeo} material={benchMat} matrices={benchMatrices} />
-        <StaticInstances geometry={grassGeo} material={grassMat} matrices={grassMatrices} />
+        <StaticInstances geometry={fenceGeo} material={fenceMat} matrices={fenceMatrices} castShadow={false} />
+        <StaticInstances geometry={streetlightGeo} material={streetlightMat} matrices={streetlightMatrices} castShadow={false} />
+        <StaticInstances geometry={fancyStreetlightGeo} material={streetlightMat} matrices={fancyStreetlightMatrices} castShadow={false} />
+        <StaticInstances geometry={trashbinGeo} material={trashbinMat} matrices={trashbinMatrices} castShadow={false} />
+        <StaticInstances geometry={mailboxGeo} material={mailboxMat} matrices={mailboxMatrices} castShadow={false} />
+        <StaticInstances geometry={planterGeo} material={planterMat} matrices={planterMatrices} castShadow={false} />
+        <StaticInstances geometry={bushGeo} material={bushMat} matrices={bushMatrices} castShadow={false} />
+        <StaticInstances geometry={bushLargeGeo} material={bushMat} matrices={bushLargeMatrices} castShadow={false} />
+        <StaticInstances geometry={signboardGeo} material={signboardMat} matrices={signboardMatrices} castShadow={false} />
+        <StaticInstances geometry={busStopGeo} material={busStopMat} matrices={busStopMatrices} castShadow={false} />
+        <StaticInstances geometry={benchGeo} material={benchMat} matrices={benchMatrices} castShadow={false} />
+        <StaticInstances geometry={grassGeo} material={grassMat} matrices={grassMatrices} castShadow={false} receiveShadow={false} />
       </group>
     </>
   );
 }
-
