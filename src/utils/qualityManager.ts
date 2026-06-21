@@ -30,14 +30,14 @@ export interface QualitySettings {
 const QUALITY_PRESETS: Record<QualityTier, QualitySettings> = {
   low: {
     tier: 'low',
-    dpr: [0.75, 1],
-    chunksAhead: 4,
+    dpr: [0.65, 0.85], // More aggressive reduction for low-end mobile
+    chunksAhead: 3,   // Reduced for mobile
     chunksBehind: 1,
-    maxParticles: 16,
+    maxParticles: 12, // Reduced
     enableShadows: false,
-    envDensity: 0.4,
+    envDensity: 0.3,  // Reduced
     antialias: false,
-    maxCoinAnimations: 30,
+    maxCoinAnimations: 20, // Reduced
     shadowMapSize: 512,
     maxPointLights: 0,
     enablePowerupGlow: false,
@@ -45,20 +45,20 @@ const QUALITY_PRESETS: Record<QualityTier, QualitySettings> = {
     enableDistantSkyline: false,
     enableStars: false,
     envPropCastShadow: false,
-    sparkleParticles: 24,
-    fogNear: 25,
-    fogFar: 140,
+    sparkleParticles: 16, // Reduced
+    fogNear: 20,
+    fogFar: 100, // Thicker fog to hide lower visibility
   },
   medium: {
     tier: 'medium',
-    dpr: [1, 1.25],
-    chunksAhead: 5,
+    dpr: [0.85, 1],
+    chunksAhead: 4,
     chunksBehind: 2,
-    maxParticles: 48,
+    maxParticles: 32,
     enableShadows: false,
-    envDensity: 0.65,
+    envDensity: 0.5,
     antialias: false,
-    maxCoinAnimations: 60,
+    maxCoinAnimations: 40,
     shadowMapSize: 1024,
     maxPointLights: 1,
     enablePowerupGlow: true,
@@ -66,9 +66,9 @@ const QUALITY_PRESETS: Record<QualityTier, QualitySettings> = {
     enableDistantSkyline: false,
     enableStars: false,
     envPropCastShadow: false,
-    sparkleParticles: 48,
-    fogNear: 30,
-    fogFar: 180,
+    sparkleParticles: 32,
+    fogNear: 25,
+    fogFar: 150,
   },
   high: {
     tier: 'high',
@@ -95,11 +95,9 @@ const QUALITY_PRESETS: Record<QualityTier, QualitySettings> = {
 
 function detectIsMobile(): boolean {
   if (typeof navigator === 'undefined') return false;
-  // Check user agent
   const uaMatch = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
     navigator.userAgent
   );
-  // Also check touch support + small screen as a fallback
   const touchMatch = ('ontouchstart' in window || navigator.maxTouchPoints > 0) && 
     window.innerWidth < 1024;
   return uaMatch || touchMatch;
@@ -109,27 +107,21 @@ function detectIsLowEndMobile(): boolean {
   if (!detectIsMobile()) return false;
   const cores = navigator.hardwareConcurrency ?? 4;
   const memory = (navigator as unknown as { deviceMemory?: number }).deviceMemory ?? 4;
-  return cores <= 4 || memory <= 3;
+  return cores <= 4 || memory <= 4;
 }
 
 function detectTier(): QualityTier {
   const isMobile = detectIsMobile();
-
-  // Check hardware concurrency (CPU cores)
   const cores = navigator.hardwareConcurrency ?? 4;
-
-  // Check device memory (Chrome only)
   const memory = (navigator as unknown as { deviceMemory?: number }).deviceMemory ?? 8;
 
-  // Mobile with low specs → low
   if (isMobile) {
     if (cores <= 4 || memory <= 4) return 'low';
-    return 'medium';
+    if (cores >= 8 && memory >= 6) return 'medium'; // Most mobile devices should stick to medium
+    return 'low'; 
   }
 
-  // Desktop with low specs → medium
   if (cores <= 2 || memory <= 4) return 'medium';
-
   return 'high';
 }
 
@@ -146,6 +138,11 @@ class QualityManager {
     this._isLowEnd = detectIsLowEndMobile();
     const tier = detectTier();
     this._settings = { ...QUALITY_PRESETS[tier] };
+    
+    // Safety check: force low if explicitly low end
+    if (this._isLowEnd) {
+      this._settings = { ...QUALITY_PRESETS.low };
+    }
   }
 
   get settings(): QualitySettings {
@@ -164,25 +161,17 @@ class QualityManager {
     return this._settings.tier;
   }
 
-  /** Call every frame to track FPS and adaptively downgrade */
   trackFrame() {
     const now = performance.now();
     if (this._lastFrameTime > 0) {
       const fps = 1000 / (now - this._lastFrameTime);
       this._fpsHistory.push(fps);
+      if (this._fpsHistory.length > 120) this._fpsHistory.shift();
 
-      // Keep only last 120 frames (about 2 seconds)
-      if (this._fpsHistory.length > 120) {
-        this._fpsHistory.shift();
-      }
-
-      // Check after 60 frames of data (react faster on mobile)
-      const checkThreshold = this._isMobile ? 60 : 90;
+      const checkThreshold = this._isMobile ? 45 : 90; // Check faster on mobile
       if (this._fpsHistory.length >= checkThreshold && this._downgradeCount < 2) {
-        const avgFps =
-          this._fpsHistory.reduce((a, b) => a + b, 0) / this._fpsHistory.length;
-
-        const threshold = this._isMobile ? 30 : 45;
+        const avgFps = this._fpsHistory.reduce((a, b) => a + b, 0) / this._fpsHistory.length;
+        const threshold = this._isMobile ? 32 : 45; // Downgrade if below 32fps on mobile
         if (avgFps < threshold) {
           this._downgrade();
           this._fpsHistory.length = 0;
@@ -197,10 +186,10 @@ class QualityManager {
     const current = this._settings.tier;
     if (current === 'high') {
       this._settings = { ...QUALITY_PRESETS.medium };
-      console.info('[QualityManager] Downgraded to MEDIUM quality');
+      console.info('[QualityManager] Adaptive: Downgraded to MEDIUM');
     } else if (current === 'medium') {
       this._settings = { ...QUALITY_PRESETS.low };
-      console.info('[QualityManager] Downgraded to LOW quality');
+      console.info('[QualityManager] Adaptive: Downgraded to LOW');
     }
   }
 
